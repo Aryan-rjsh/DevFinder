@@ -1,4 +1,4 @@
-# DevFinder (also known as TEAM-SEEK)
+# DevFinder 
 
 ### Stop coding in a vacuum. Start building in a pack.
 
