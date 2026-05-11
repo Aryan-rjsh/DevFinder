@@ -1,4 +1,4 @@
-const API   = 'http://localhost:5000/api';
+const API   = 'http://127.0.0.1:5000/api';
 const token = localStorage.getItem('token');
 const user  = JSON.parse(localStorage.getItem('user') || 'null');
 
@@ -79,13 +79,20 @@ function renderCards(teams) {
     </div>`).join('');
 }
 
-// Sample data — replace with API call later
-allTeams = [
-  { name: 'GREENHACK',          by: 'Grevoro',      roles: ['UI/UX Designer', 'Web Developer', 'AI Engineer'], slots: '4|4', deadline: '2026-05-12' },
-  { name: 'CSU AI HACKATHON',   by: 'FlowZint',     roles: ['UI/UX Designer', 'Web Developer', 'AI Engineer'], slots: '4|4', deadline: '2026-05-12' },
-  { name: 'AGENTIC AI HACKATHON', by: 'ProductSpace', roles: ['UI/UX Designer', 'Web Developer', 'AI Engineer'], slots: '4|4', deadline: '2026-05-12' },
-];
-renderCards(allTeams);
+// ── API Integration ──────────────────────────────────────
+async function fetchTeams() {
+  try {
+    const res = await fetch(`${API}/teams`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    allTeams = data;
+    renderCards(allTeams);
+  } catch (err) {
+    console.error("Failed to fetch teams:", err);
+  }
+}
+
+fetchTeams();
 
 // ── Search ───────────────────────────────────────────────
 document.getElementById('search-input').addEventListener('input', e => {
@@ -137,16 +144,52 @@ function submitHost() {
   if (!by)           return showModalError('Hosted by is required');
   if (!roles.length) return showModalError('Add at least one role');
 
-  allTeams.unshift({ name: name.toUpperCase(), by, roles, slots: `${size}|${size}`, deadline });
-  renderCards(allTeams);
-  closeModal();
+  const desc     = document.getElementById('f-desc').value.trim();
+  const tech     = document.getElementById('f-tech').value.trim().split(',').map(s => s.trim()).filter(Boolean);
 
-  // Reset form
-  ['f-name','f-by','f-desc','f-tech','f-deadline'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('f-size').value = '4';
-  document.getElementById('roles-builder').innerHTML = `
-    <div class="role-input-row">
-      <input type="text" placeholder="e.g. UI/UX Designer">
-      <button onclick="removeRole(this)"><i class="fa-solid fa-minus"></i></button>
-    </div>`;
+  const btn = document.querySelector('.modal-foot .primary');
+  const oldText = btn.textContent;
+  btn.textContent = 'HOSTING...';
+  btn.disabled = true;
+
+  fetch(`${API}/teams`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      name: name.toUpperCase(),
+      hosted_by: by,
+      description: desc,
+      tech_stack: tech,
+      roles: roles,
+      team_size: size,
+      deadline: deadline
+    })
+  })
+  .then(res => res.json().then(data => ({ ok: res.ok, data })))
+  .then(({ ok, data }) => {
+    if (!ok) throw new Error(data.error || 'Failed to host team');
+    
+    allTeams.unshift(data);
+    renderCards(allTeams);
+    closeModal();
+    
+    // Reset form
+    ['f-name','f-by','f-desc','f-tech','f-deadline'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('f-size').value = '4';
+    document.getElementById('roles-builder').innerHTML = `
+      <div class="role-input-row">
+        <input type="text" placeholder="e.g. UI/UX Designer">
+        <button onclick="removeRole(this)"><i class="fa-solid fa-minus"></i></button>
+      </div>`;
+  })
+  .catch(err => {
+    showModalError(err.message);
+  })
+  .finally(() => {
+    btn.textContent = oldText;
+    btn.disabled = false;
+  });
 }

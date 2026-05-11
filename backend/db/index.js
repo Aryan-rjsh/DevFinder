@@ -1,18 +1,28 @@
-const { Pool } = require("pg");
-const dotenv   = require("dotenv");
+const { neon } = require("@neondatabase/serverless");
+const dotenv = require("dotenv");
 dotenv.config();
 
-const pool = new Pool({
-  host    : process.env.DB_HOST,
-  user    : process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  port    : process.env.DB_PORT || 5432,
-});
+// Use the HTTP driver to bypass Port 5432 blocks
+const sql = neon(process.env.DATABASE_URL);
 
-pool.connect((err) => {
-  if (err) console.error("DB Connection Error:", err.message);
-  else     console.log("PostgreSQL connected ✅");
-});
+// We wrap the sql function to maintain compatibility if you were using pool.query
+const pool = {
+  query: (text, params) => {
+    // Neon HTTP driver handles parameters automatically via sql.query
+    return sql.query(text, params).then(rows => ({ rows }));
+  },
+  connect: async () => {
+    // HTTP is stateless, so "connecting" is just a quick check
+    try {
+      await sql`SELECT 1`;
+      console.log("PostgreSQL connected via HTTP ✅");
+    } catch (err) {
+      console.error("DB Connection Error:", err.message);
+    }
+  }
+};
+
+// Auto-check connection on startup
+pool.connect();
 
 module.exports = pool;

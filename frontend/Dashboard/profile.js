@@ -1,4 +1,4 @@
-const API   = 'http://localhost:5000/api';
+const API   = 'http://127.0.0.1:5000/api';
 const token = localStorage.getItem('token');
 let   user  = JSON.parse(localStorage.getItem('user') || 'null');
 
@@ -36,7 +36,7 @@ function showToast(msg) {
 // ── Load profile from DB ─────────────────────────────────
 async function loadProfile() {
   try {
-    const res  = await fetch(`${API}/auth/me`, {
+    const res  = await fetch(`${API}/users/me`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     const data = await res.json();
@@ -199,20 +199,15 @@ async function saveProfile() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
 
-    // Update localStorage
-    user = { ...user, name, bio, skills: editSkills, github_url: github, linkedin_url: linkedin };
+    // Update local state and UI
+    user = data;
     localStorage.setItem('user', JSON.stringify(user));
 
     renderProfile();
     cancelEdit();
     showToast('Profile updated successfully!');
   } catch (err) {
-    // If API not wired yet, save to localStorage only
-    user = { ...user, name, bio, skills: editSkills, github_url: github, linkedin_url: linkedin };
-    localStorage.setItem('user', JSON.stringify(user));
-    renderProfile();
-    cancelEdit();
-    showToast('Profile saved locally!');
+    showToast('Error: ' + err.message);
   }
 }
 

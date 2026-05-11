@@ -1,4 +1,4 @@
-const API = "http://localhost:5000/api";
+const API = "http://127.0.0.1:5000/api";
 
 // ── Toggle password visibility ──────────────────────────
 function togglePassword(inputId, icon) {
@@ -55,7 +55,8 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
     window.location.href = "../Dashboard/dashboard.html";
 
   } catch (err) {
-    errorEl.textContent = "Cannot reach server. Is the backend running?";
+    console.error("Login Error:", err);
+    errorEl.textContent = "Cannot reach server. Please try again later.";
   } finally {
     btn.textContent = "Login";
     btn.disabled    = false;
