@@ -8,6 +8,13 @@ if (dns.setDefaultResultOrder) {
     dns.setDefaultResultOrder("ipv4first");
 }
 
+// Bypass restrictive local DNS that might be blocking Neon
+try {
+    dns.setServers(['8.8.8.8', '8.8.4.4']);
+} catch (e) {
+    console.warn("Could not set custom DNS servers:", e.message);
+}
+
 dotenv.config();
 
 
@@ -20,6 +27,7 @@ process.on("unhandledRejection", (reason) => console.error("PROMISE REJECTION:",
 const authRoutes = require("./routes/auth");
 const teamRoutes = require("./routes/teams");
 const userRoutes = require("./routes/users");
+const applicationRoutes = require("./routes/applications");
 
 const app = express();
 
@@ -29,6 +37,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/teams", teamRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/applications", applicationRoutes);
 
 app.get("/", (req, res) => res.send("DevFinder API running ✅"));
 
