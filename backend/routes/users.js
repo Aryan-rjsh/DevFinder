@@ -18,6 +18,25 @@ router.get("/me", auth, async (req, res) => {
   }
 });
 
+// ── GET USER BY ID ──────────────────────────────────────
+router.get("/:id", auth, async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Check if id is actually a number
+    if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+
+    const result = await pool.query(
+      "SELECT id, name, email, skills, bio, github_url, linkedin_url, created_at FROM users WHERE id = $1",
+      [id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: "User not found" });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Fetch user error:", err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 // ── UPDATE PROFILE ─────────────────────────────────────
 router.put("/profile", auth, async (req, res) => {
   const { name, bio, skills, github_url, linkedin_url } = req.body;

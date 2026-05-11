@@ -72,7 +72,7 @@ router.get("/team/:teamId", auth, async (req, res) => {
     if (team.rows.length === 0) return res.status(403).json({ error: "Unauthorized" });
 
     const result = await pool.query(
-      `SELECT a.*, u.name as applicant_name, u.email as applicant_email, u.skills, u.github_url, u.linkedin_url
+      `SELECT a.*, u.id as applicant_id, u.name as applicant_name, u.email as applicant_email, u.skills, u.github_url, u.linkedin_url, u.bio
        FROM applications a
        JOIN users u ON a.applicant_id = u.id
        WHERE a.team_id = $1

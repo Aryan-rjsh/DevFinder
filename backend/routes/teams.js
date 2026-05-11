@@ -42,4 +42,43 @@ router.post("/", auth, async (req, res) => {
   }
 });
 
+// ── GET TEAMS I AM IN (HOST OR MEMBER) ────────────────
+router.get("/my-teams", auth, async (req, res) => {
+  const userId = req.user.id;
+  try {
+    // 1. Get teams where user is host or has an accepted application
+    const teamsResult = await pool.query(`
+      SELECT DISTINCT t.*, u.name as creator_name
+      FROM teams t
+      JOIN users u ON t.created_by = u.id
+      LEFT JOIN applications a ON t.id = a.team_id
+      WHERE t.created_by = $1 OR (a.applicant_id = $1 AND a.status = 'accepted')
+      ORDER BY t.created_at DESC
+    `, [userId]);
+
+    const teams = teamsResult.rows;
+
+    // 2. For each team, fetch all accepted members + the host
+    for (let team of teams) {
+      const membersResult = await pool.query(`
+        (SELECT u.id, u.name, u.email, 'HOST' as role_in_team
+         FROM users u
+         WHERE u.id = $1)
+        UNION
+        (SELECT u.id, u.name, u.email, a.role as role_in_team
+         FROM users u
+         JOIN applications a ON u.id = a.applicant_id
+         WHERE a.team_id = $2 AND a.status = 'accepted')
+      `, [team.created_by, team.id]);
+      
+      team.members = membersResult.rows;
+    }
+
+    res.json(teams);
+  } catch (err) {
+    console.error("Fetch my teams error:", err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 module.exports = router;
