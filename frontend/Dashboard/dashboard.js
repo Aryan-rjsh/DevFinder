@@ -1,7 +1,9 @@
-const API    = 'http://127.0.0.1:5000/api';
+const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const BASE_URL = IS_LOCAL ? 'http://127.0.0.1:5000' : 'https://devfinder-backend-ll4g.onrender.com'; // TODO: Replace with your Render URL
+const API      = `${BASE_URL}/api`;
 const token  = localStorage.getItem('token');
 const user   = JSON.parse(localStorage.getItem('user') || 'null');
-const socket = io('http://127.0.0.1:5000');
+const socket = io(BASE_URL);
 
 // ── GLOBAL STATE ──
 const State = {
