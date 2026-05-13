@@ -3,212 +3,155 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DevFinder — Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&family=UnifrakturMaguntia&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<title>DevFinder — Premium Center</title>
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 </head>
 <body>
 
-<aside class="sidebar" id="sidebar">
-  <div class="sidebar-top">
-    <div class="user-avatar"><i class="fa-solid fa-user"></i></div>
-    <div>
-      <div class="user-name" id="sidebar-name">LOADING...</div>
-      <div class="user-role">Member</div>
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="user-profile">
+    <div class="avatar" id="u-avatar"><i class="fa-solid fa-bolt"></i></div>
+    <div class="user-info">
+      <h2 id="u-name">SREERAG</h2>
+      <p id="u-role">MEMBER</p>
     </div>
   </div>
 
-  <div class="nav-section">
-    <div class="nav-item active" onclick="setActive(this, 'all')">
-      <i class="fa-solid fa-house"></i> Dashboard
+  <nav class="nav-list">
+    <div class="nav-item active" data-nav="all">
+      <i class="fa-solid fa-house"></i> <span>Dashboard</span>
     </div>
-    <div class="nav-item" onclick="setActive(this, 'joined')">
-      <i class="fa-solid fa-users"></i> My Teams
+    <div class="nav-item" data-nav="recommended">
+      <i class="fa-solid fa-wand-magic-sparkles"></i> <span>Recommended</span>
     </div>
-    <div class="nav-item" onclick="setActive(this, 'hosted')">
-      <i class="fa-solid fa-list-check"></i> My Hosted
+    <div class="nav-item" data-nav="joined">
+      <i class="fa-solid fa-users"></i> <span>My Teams</span>
     </div>
-  </div>
+    <div class="nav-item" data-nav="hosted">
+      <i class="fa-solid fa-list-check"></i> <span>My Hosted</span>
+    </div>
+    <div class="nav-item" data-nav="hackathons">
+      <i class="fa-solid fa-trophy"></i> <span>Hackathons</span>
+    </div>
+    <div class="nav-item admin-only" id="admin-nav-btn" style="display:none; color:var(--pink)">
+      <i class="fa-solid fa-shield-halved"></i> <span>Admin Panel</span>
+    </div>
+  </nav>
 
-  <div class="nav-divider"></div>
-
-  <div class="nav-section" style="padding-top:0">
+  <div style="margin-top:20px">
     <a class="nav-item" href="profile.html">
-      <i class="fa-solid fa-circle-user"></i> Profile
+      <i class="fa-solid fa-id-card"></i> <span>Profile</span>
     </a>
-    <div class="nav-item" onclick="setActive(this)">
-      <i class="fa-solid fa-gear"></i> Settings
+    <div class="nav-item danger" id="logout-btn">
+      <i class="fa-solid fa-power-off"></i> <span>Log Out</span>
     </div>
   </div>
 
-  <div class="nav-divider"></div>
-
-  <div class="nav-section" style="padding-top:0">
-    <div class="nav-item danger" onclick="logout()">
-      <i class="fa-solid fa-right-from-bracket"></i> Log Out
-    </div>
-  </div>
-
-  <div class="sidebar-bottom">
-    <div class="sidebar-logo">DevFinder</div>
-    <div class="sidebar-since">Since 2026</div>
-  </div>
+  <div class="sidebar-logo">DevFinder</div>
 </aside>
 
-<button class="collapse-btn" id="collapse-btn" onclick="toggleSidebar()">
-  <i class="fa-solid fa-chevron-left" id="collapse-icon"></i>
-</button>
-
-<div class="main" id="main">
-  <div class="bg-wrap">
-    <div class="bg-yellow"></div>
-    <div class="bg-pink"></div>
-    <div class="bg-green"></div>
-  </div>
-
-  <div class="topbar">
-    <div class="search-wrap">
-      <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" placeholder="Search Teams, Events, User" id="search-input">
+<!-- MAIN -->
+<main class="main-area">
+  <header class="top-bar">
+    <div style="flex:1; position:relative;">
+      <input type="text" class="search-input" placeholder="Find teams, roles, stack..." id="search-bar">
     </div>
-    <button class="host-btn" onclick="openModal()">
+    
+    <button class="btn-host" id="host-trigger">
       <i class="fa-solid fa-plus"></i> HOST TEAM
     </button>
-    <button class="icon-btn" onclick="window.location.href='profile.html'">
-      <i class="fa-solid fa-user"></i>
+    
+    <button class="btn-icon" id="notif-trigger">
+      <i class="fa-solid fa-bell"></i>
+      <div id="notif-count" style="display:none; position:absolute; top:-5px; right:-5px; background:var(--red); color:white; width:22px; height:22px; border-radius:50%; border:3px solid black; font-size:10px; font-weight:900; align-items:center; justify-content:center;">0</div>
     </button>
-    <button class="icon-btn"><i class="fa-solid fa-bell"></i></button>
-    <button class="icon-btn"><i class="fa-solid fa-gear"></i></button>
-  </div>
+  </header>
 
-  <div class="content">
-    <div class="hostspace-title">H<span class="o">O</span>STSPACE</div>
-    <div class="cards-row" id="cards-row"></div>
-  </div>
-</div>
+  <section class="scroll-area">
+    <h1 class="hero-title">H<span>O</span>STSPACE</h1>
+    <div class="grid" id="grid"></div>
+  </section>
+</main>
 
 <!-- HOST MODAL -->
-<div class="modal-overlay" id="modal">
-  <div class="modal">
-    <div class="modal-title">HOST A TEAM</div>
-    <button class="modal-close" onclick="closeModal()">
-      <i class="fa-solid fa-xmark"></i>
-    </button>
-
-    <div class="field">
-      <label>Team / Hackathon Name</label>
-      <input type="text" id="f-name" placeholder="e.g. GreenHack 2026">
-    </div>
-    <div class="field">
-      <label>Hosted By</label>
-      <input type="text" id="f-by" placeholder="Organisation or your name">
-    </div>
-    <div class="field">
-      <label>Description</label>
-      <textarea id="f-desc" placeholder="What are you building?"></textarea>
-    </div>
-    <div class="field">
-      <label>Tech Stack</label>
-      <input type="text" id="f-tech" placeholder="e.g. React, Node.js, PostgreSQL">
-    </div>
-    <div class="field">
-      <label>Team Size</label>
-      <input type="number" id="f-size" min="2" max="10" value="4">
-    </div>
-    <div class="field">
-      <label>Deadline</label>
-      <input type="date" id="f-deadline">
-    </div>
+<div class="modal-bg" id="modal-host">
+  <div class="modal-content">
+    <h1 style="font-family:var(--font-title); font-size:42px; border-bottom:3px solid black; margin-bottom:25px;">NEW TEAM</h1>
+    <button class="modal-close" data-close="modal-host"><i class="fa-solid fa-x"></i></button>
+    <div class="field"><label>Team Name</label><input type="text" id="h-name" placeholder="e.g. Dream Team"></div>
+    <div class="field"><label>Tech Stack</label><input type="text" id="h-tech" placeholder="React, Node, etc."></div>
     <div class="field">
       <label>Roles Needed</label>
-      <div class="roles-builder" id="roles-builder">
-        <div class="role-input-row">
-          <input type="text" placeholder="e.g. UI/UX Designer">
-          <button onclick="removeRole(this)"><i class="fa-solid fa-minus"></i></button>
+      <div id="role-inputs">
+        <div style="display:flex; gap:10px; margin-bottom:10px;">
+          <input type="text" placeholder="e.g. UI/UX Designer" style="flex:1">
+          <button class="btn-icon" style="width:45px; height:45px; background:var(--red); color:white;" onclick="this.parentElement.remove()"><i class="fa-solid fa-minus"></i></button>
         </div>
       </div>
-      <button class="add-role-btn" onclick="addRole()">
-        <i class="fa-solid fa-plus"></i> Add Role
-      </button>
+      <button class="btn-host" style="width:100%; background:none; color:black; border:2px dashed black; font-size:16px; box-shadow:none;" id="add-role-btn">+ ADD ROLE</button>
     </div>
-
-    <div id="modal-error"></div>
-    <button class="submit-btn" onclick="submitHost()">CREATE TEAM</button>
+    <div class="field"><label>Hackathon</label><select id="h-hack"></select></div>
+    <div class="field"><label>Deadline</label><input type="date" id="h-date"></div>
+    <button class="btn-host" style="width:100%; margin-top:15px;" id="publish-team-btn">PUBLISH SQUAD</button>
   </div>
 </div>
 
 <!-- APPLY MODAL -->
-<div class="modal-overlay" id="apply-modal">
-  <div class="modal apply-modal">
-    <div class="modal-title">APPLY FOR TEAM</div>
-    <button class="modal-close" onclick="closeApplyModal()">
-      <i class="fa-solid fa-xmark"></i>
-    </button>
-
-    <div class="field">
-      <label>Select Role</label>
-      <select id="a-role"></select>
-    </div>
-    <div class="field">
-      <label>Message / Portfolio</label>
-      <textarea id="a-message" placeholder="Why should you be part of this team? Share links to your work."></textarea>
-    </div>
-
-    <div id="apply-modal-error"></div>
-    <button class="submit-btn" id="apply-submit-btn" onclick="submitApply()">SUBMIT APPLICATION</button>
-  </div>
-</div>
-
-<!-- APPLICATIONS / REQUESTS MODAL -->
-<div class="modal-overlay" id="requests-modal">
-  <div class="modal requests-modal">
-    <div class="modal-title">TEAM APPLICATIONS</div>
-    <button class="modal-close" onclick="closeRequestsModal()">
-      <i class="fa-solid fa-xmark"></i>
-    </button>
-    <div id="requests-list-container">
-      <!-- Applications will be injected here -->
-    </div>
-  </div>
-</div>
-
-<!-- USER PROFILE VIEW MODAL -->
-<div class="modal-overlay" id="user-profile-modal">
-  <div class="modal user-profile-modal">
-    <button class="modal-close" onclick="closeUserProfileModal()">
-      <i class="fa-solid fa-xmark"></i>
-    </button>
-    <div id="user-profile-content">
-      <!-- User profile info will be injected here -->
-    </div>
+<div class="modal-bg" id="modal-apply">
+  <div class="modal-content">
+    <h1 style="font-family:var(--font-title); font-size:42px; border-bottom:3px solid black; margin-bottom:25px;" id="apply-title">APPLY</h1>
+    <button class="modal-close" data-close="modal-apply"><i class="fa-solid fa-x"></i></button>
+    <div class="field"><label>Select Role</label><select id="a-role"></select></div>
+    <div class="field"><label>Your Pitch</label><textarea id="a-msg" style="height:120px;"></textarea></div>
+    <button class="btn-host" style="width:100%; background:var(--green); color:black;" id="submit-application-btn">SEND APPLICATION</button>
   </div>
 </div>
 
 <!-- CHAT MODAL -->
-<div class="modal-overlay" id="chat-modal">
-  <div class="modal chat-modal">
+<div class="modal-bg" id="modal-chat">
+  <div class="modal-content chat-window" style="width:600px;">
     <div class="chat-header">
-      <div class="chat-team-info">
-        <div class="chat-team-name" id="chat-team-name">TEAM NAME</div>
-        <div class="chat-status">Live Chat</div>
+      <div>
+        <h2 style="font-family:var(--font-title); font-size:32px; line-height:1;" id="chat-title">TEAM CHAT</h2>
+        <p style="font-size:9px; font-weight:900; opacity:0.6;">SQUAD CHANNEL</p>
       </div>
-      <button class="modal-close" onclick="closeChat()">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
+      <button class="modal-close" data-close="modal-chat" style="position:static;"><i class="fa-solid fa-x"></i></button>
     </div>
-    
-    <div class="chat-messages" id="chat-messages">
-      <!-- Messages will appear here -->
-    </div>
-
-    <div class="chat-input-area">
-      <input type="text" id="chat-input" placeholder="Type a message...">
-      <button onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+    <div class="chat-msgs" id="chat-msgs"></div>
+    <div style="padding:20px; background:white; border-top:var(--border); display:flex; gap:12px;">
+      <input type="text" id="chat-input" placeholder="Message..." style="flex:1; border:3px solid black; border-radius:99px; padding:12px 20px; font-weight:700;">
+      <button id="send-chat-btn" style="width:50px; height:50px; border-radius:50%; background:var(--black); color:white; border:none; cursor:pointer;"><i class="fa-solid fa-paper-plane"></i></button>
     </div>
   </div>
 </div>
+
+<!-- ADMIN MODAL -->
+<div class="modal-bg" id="modal-admin">
+  <div class="modal-content" style="width:650px;">
+    <h1 style="font-family:var(--font-title); font-size:42px; border-bottom:3px solid black; margin-bottom:25px;">ADMIN CONTROL</h1>
+    <button class="modal-close" data-close="modal-admin"><i class="fa-solid fa-x"></i></button>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+      <div style="background:var(--bg); padding:20px; border:3px solid black; border-radius:20px;">
+        <h3 style="font-family:var(--font-title); font-size:24px;">STATS</h3>
+        <div style="font-weight:900; line-height:1.8;">
+          USERS: <span id="stat-u" style="color:var(--red)">0</span><br>
+          TEAMS: <span id="stat-t" style="color:var(--green)">0</span><br>
+          APPS: <span id="stat-a" style="color:var(--cyan)">0</span>
+        </div>
+      </div>
+      <div style="background:var(--yellow); padding:20px; border:3px solid black; border-radius:20px;">
+        <h3 style="font-family:var(--font-title); font-size:24px;">BROADCAST</h3>
+        <textarea id="admin-bc" placeholder="Message to all..." style="width:100%; height:80px; margin:10px 0;"></textarea>
+        <button class="btn-host" style="width:100%;" id="broadcast-btn">SEND ALL</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="alerts" style="position:fixed; top:20px; right:20px; z-index:3000;"></div>
 
 <script src="dashboard.js"></script>
 </body>

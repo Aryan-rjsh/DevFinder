@@ -7,7 +7,7 @@ const auth    = require("../middleware/auth");
 router.get("/me", auth, async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT id, name, email, skills, bio, github_url, linkedin_url, created_at FROM users WHERE id = $1",
+      "SELECT id, name, email, skills, bio, github_url, linkedin_url, is_admin, created_at FROM users WHERE id = $1",
       [req.user.id]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: "User not found" });

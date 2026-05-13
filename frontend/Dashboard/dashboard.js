@@ -1,564 +1,458 @@
-const API   = 'http://127.0.0.1:5000/api';
-const token = localStorage.getItem('token');
-const user  = JSON.parse(localStorage.getItem('user') || 'null');
+const API    = 'http://127.0.0.1:5000/api';
+const token  = localStorage.getItem('token');
+const user   = JSON.parse(localStorage.getItem('user') || 'null');
 const socket = io('http://127.0.0.1:5000');
 
-// ── Auth guard ───────────────────────────────────────────
-if (!token || !user) window.location.href = '../Authentication/login.html';
+// ── GLOBAL STATE ──
+const State = {
+  isAdmin: false,
+  allTeams: [],
+  currentTid: null,
+  activeNav: 'all'
+};
 
-// ── Set username in sidebar ──────────────────────────────
-if (user) document.getElementById('sidebar-name').textContent = user.name.toUpperCase();
-
-// ── Sidebar toggle ───────────────────────────────────────
-let sidebarOpen = true;
-
-function toggleSidebar() {
-  sidebarOpen = !sidebarOpen;
-  const sb   = document.getElementById('sidebar');
-  const btn  = document.getElementById('collapse-btn');
-  const icon = document.getElementById('collapse-icon');
-  const bg   = document.querySelector('.bg-wrap');
-
-  sb.classList.toggle('collapsed', !sidebarOpen);
-  btn.style.left   = sidebarOpen ? '270px' : '0px';
-  icon.style.transform = sidebarOpen ? '' : 'rotate(180deg)';
-  bg.style.left    = sidebarOpen ? '270px' : '0px';
-}
-
-function setActive(el, type = 'all') {
-  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-  el.classList.add('active');
-  
-  if (type === 'all') {
-    renderCards(allTeams);
-  } else if (type === 'hosted') {
-    renderHostedCards(allTeams.filter(t => t.created_by === user.id));
-  } else if (type === 'joined') {
-    fetchMyTeams();
-  }
-}
-
-function logout() {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
+// ── BOOTSTRAP ──
+if (!token || !user) {
   window.location.href = '../Authentication/login.html';
 }
 
-// ── Cards ────────────────────────────────────────────────
-const dotClass = ['dot-r', 'dot-y', 'dot-g'];
-let allTeams = [];
+document.addEventListener('DOMContentLoaded', async () => {
+  console.log("DevFinder Dashboard Initializing...");
+  
+  try {
+    // 1. Setup UI
+    document.getElementById('u-name').textContent = user.name.toUpperCase();
+    
+    // 2. Initial Data Load
+    await checkAdmin();
+    await fetchTeams();
+    await fetchHackathons();
+    await fetchNotifications();
+    
+    // 3. Setup Listeners
+    setupEventListeners();
+    
+    // 4. Socket Listeners
+    setupSocketListeners();
+    
+    console.log("Dashboard Ready ✅");
+  } catch (err) {
+    console.error("Critical Init Error:", err);
+    showAlert("SYSTEM ERROR: PLEASE REFRESH");
+  }
+});
 
-function formatDate(d) {
-  if (!d) return 'TBD';
-  return new Date(d).toLocaleDateString('en-GB', {
-    day: '2-digit', month: 'short', year: 'numeric'
-  }).toUpperCase();
+// ── CORE LOGIC ──
+
+async function checkAdmin() {
+  try {
+    const res = await fetch(`${API}/users/me`, { headers: { 'Authorization': `Bearer ${token}` } });
+    const data = await res.json();
+    if (res.ok && data.is_admin) {
+      State.isAdmin = true;
+      document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
+      document.getElementById('u-role').textContent = 'ADMINISTRATOR';
+      document.getElementById('u-avatar').style.background = 'var(--red)';
+      document.getElementById('u-avatar').style.color = 'white';
+    }
+  } catch (err) { console.warn("Admin status could not be verified"); }
+}
+
+async function fetchTeams() {
+  try {
+    const search = document.getElementById('search-bar').value;
+    const res = await fetch(`${API}/teams`);
+    State.allTeams = await res.json();
+    
+    const filtered = State.allTeams.filter(t => 
+      t.name.toLowerCase().includes(search.toLowerCase())
+    );
+    
+    renderCards(filtered);
+  } catch (err) {
+    console.error("Fetch Teams failed:", err);
+    showAlert("FAILED TO LOAD TEAMS");
+  }
 }
 
 function renderCards(teams) {
-  const row = document.getElementById('cards-row');
+  const grid = document.getElementById('grid');
   if (!teams.length) {
-    row.innerHTML = `<p style="font-size:14px;font-weight:600;color:rgba(0,0,0,0.4);margin-top:8px">
-      No teams yet. Click <strong>+ HOST TEAM</strong> to create one.</p>`;
+    grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:100px; opacity:0.2"><h1>VOID</h1></div>`;
     return;
   }
-  row.innerHTML = teams.map(t => `
-    <div class="team-card">
-      <div class="card-top">
-        <div>
-          <div class="card-name">${t.name}</div>
-          <div class="card-by">By ${t.by || t.creator_name || 'Unknown'}</div>
-        </div>
-        <div class="card-avatar"><i class="fa-solid fa-user"></i></div>
-      </div>
-      <div class="card-roles">
-        ${(t.roles || []).slice(0, 3).map((r, i) => `
-          <div class="role-row">
-            <span class="dot ${dotClass[i % 3]}"></span>${r}
-          </div>`).join('')}
-      </div>
-      <div class="card-foot">
-        <div class="slot-circle">${t.slots || t.team_size || 4}</div>
-        <div class="dl-badge">
-          <div class="dl-label">Deadline</div>
-          <div class="dl-date">${formatDate(t.deadline)}</div>
-        </div>
-        <button class="apply-btn" onclick="openApplyModal(${t.id}, '${t.name.replace(/'/g, "\\'")}', ${JSON.stringify(t.roles).replace(/"/g, '&quot;')})">
-          APPLY <i class="fa-solid fa-arrow-right"></i>
-        </button>
-      </div>
-    </div>`).join('');
-}
-
-function renderHostedCards(teams) {
-  const row = document.getElementById('cards-row');
-  if (!teams.length) {
-    row.innerHTML = `<p style="font-size:14px;font-weight:600;color:rgba(0,0,0,0.4);margin-top:8px">
-      You haven't hosted any teams yet.</p>`;
-    return;
-  }
-  row.innerHTML = teams.map(t => `
-    <div class="team-card">
-      <div class="card-top">
-        <div>
-          <div class="card-name">${t.name}</div>
-          <div class="card-by">Slots: ${t.team_size || 4}</div>
-        </div>
-        <div class="card-avatar"><i class="fa-solid fa-user-tie"></i></div>
-      </div>
-      <div class="card-roles">
-        ${(t.roles || []).slice(0, 3).map((r, i) => `
-          <div class="role-row">
-            <span class="dot ${dotClass[i % 3]}"></span>${r}
-          </div>`).join('')}
-      </div>
-      <div class="card-foot">
-        <div class="dl-badge" style="background:var(--black)">
-          <div class="dl-label" style="color:var(--white)">Deadline</div>
-          <div class="dl-date" style="color:var(--white)">${formatDate(t.deadline)}</div>
-        </div>
-        <button class="manage-btn" onclick="openRequestsModal(${t.id})">
-          MANAGE <i class="fa-solid fa-list-check"></i>
-        </button>
-      </div>
-    </div>`).join('');
-}
-
-function renderMyTeamsCards(teams) {
-  const row = document.getElementById('cards-row');
-  if (!teams.length) {
-    row.innerHTML = `<p style="font-size:14px;font-weight:600;color:rgba(0,0,0,0.4);margin-top:8px">
-      You haven't joined any teams yet. Browse the dashboard to find your tribe!</p>`;
-    return;
-  }
-  row.innerHTML = teams.map(t => `
-    <div class="team-card my-team-card">
-      <div class="card-top">
-        <div>
-          <div class="card-name">${t.name}</div>
-          <div class="card-by">Hosted by ${t.creator_name}</div>
-        </div>
-        <div class="card-avatar"><i class="fa-solid fa-users-viewfinder"></i></div>
-      </div>
-      
-      <div class="team-roster">
-        <div class="roster-label">TEAM ROSTER</div>
-        ${t.members.map(m => `
-          <div class="member-row" onclick="openUserProfileModal(${m.id})">
-            <div class="member-dot"></div>
-            <div class="member-name">${m.name}</div>
-            <div class="member-role-tag">${m.role_in_team}</div>
-          </div>
-        `).join('')}
-      </div>
-
-      <div class="card-foot" style="margin-top:12px;">
-        <div class="dl-badge" style="background:var(--green2);flex:1">
-          <div class="dl-label">Project Status</div>
-          <div class="dl-date">ACTIVE</div>
-        </div>
-        <button class="apply-btn" onclick="openChat(${t.id}, '${t.name.replace(/'/g, "\\'")}')" style="background:var(--yellow)">
-          CHAT <i class="fa-solid fa-comments"></i>
-        </button>
-      </div>
-    </div>`).join('');
-}
-
-async function fetchMyTeams() {
-  const row = document.getElementById('cards-row');
-  row.innerHTML = '<p style="text-align:center;width:100%;padding:40px;">Loading your squads...</p>';
-  try {
-    const res = await fetch(`${API}/teams/my-teams`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-    renderMyTeamsCards(data);
-  } catch (err) {
-    console.error("Failed to fetch my teams:", err);
-    row.innerHTML = `<p style="color:var(--red);text-align:center;width:100%">${err.message}</p>`;
-  }
-}
-
-let currentChatTeamId = null;
-
-function openChat(teamId, teamName) {
-  currentChatTeamId = teamId;
-  document.getElementById('chat-team-name').textContent = teamName;
-  document.getElementById('chat-modal').classList.add('open');
-  const container = document.getElementById('chat-messages');
-  container.innerHTML = '<p style="text-align:center;padding:20px;font-size:12px;color:#888;">Loading history...</p>';
   
-  socket.emit('join_room', teamId);
+  grid.innerHTML = teams.map(t => `
+    <article class="card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">${t.name}</h3>
+          <p class="card-subtitle">BY ${t.creator_name || 'MEMBER'} ${t.is_verified ? '✅' : ''}</p>
+        </div>
+        <div style="font-size:24px; color:${t.is_featured ? 'var(--pink)' : 'var(--black)'}">
+          <i class="fa-solid ${t.is_featured ? 'fa-star' : 'fa-bolt'}"></i>
+        </div>
+      </div>
+      <div class="roles-wrap">
+        ${(t.roles || []).map(r => `<span class="role-chip">${r.toUpperCase()}</span>`).join('')}
+      </div>
+      <div class="card-footer">
+        <div class="team-size">${t.team_size || 4}</div>
+        <button class="btn-apply" data-apply-id="${t.id}" data-apply-name="${t.name}" data-apply-roles='${JSON.stringify(t.roles)}'>APPLY</button>
+      </div>
+      ${State.isAdmin ? `
+        <div style="margin-top:15px; display:flex; gap:10px;">
+          <button class="admin-del-btn" data-id="${t.id}" style="flex:1; background:var(--black); color:white; border:none; border-radius:10px; padding:8px; font-weight:900; cursor:pointer;">DEL</button>
+          <button class="admin-feat-btn" data-id="${t.id}" data-feat="${!t.is_featured}" style="flex:1; background:var(--yellow); border:2px solid black; border-radius:10px; padding:8px; font-weight:900; cursor:pointer;">FEAT</button>
+        </div>` : ''}
+    </article>`).join('');
+}
 
-  // Fetch history
-  fetch(`${API}/chat/${teamId}`, {
-    headers: { 'Authorization': `Bearer ${token}` }
-  })
-  .then(res => res.json())
-  .then(msgs => {
-    container.innerHTML = '';
-    msgs.forEach(m => renderMessage(m));
-    container.scrollTop = container.scrollHeight;
-  })
-  .catch(err => {
-    console.error("Chat history error:", err);
-    container.innerHTML = '<p style="text-align:center;color:var(--red);">Failed to load history.</p>';
+// ── EVENT LISTENERS ──
+
+function setupEventListeners() {
+  // Sidebar Navigation
+  document.querySelectorAll('.nav-item[data-nav]').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      handleNav(item.dataset.nav);
+    });
+  });
+
+  // Topbar Actions
+  document.getElementById('search-bar').addEventListener('input', fetchTeams);
+  document.getElementById('host-trigger').addEventListener('click', () => openModal('modal-host'));
+  document.getElementById('notif-trigger').addEventListener('click', () => toggleNotifs());
+  document.getElementById('logout-btn').addEventListener('click', logout);
+  
+  // Modal Closing (Delegation)
+  document.querySelectorAll('[data-close]').forEach(btn => {
+    btn.addEventListener('click', () => closeModal(btn.dataset.close));
+  });
+
+  // Role Field Adder
+  document.getElementById('add-role-btn').addEventListener('click', addRoleField);
+
+  // Submit Buttons
+  document.getElementById('publish-team-btn').addEventListener('click', submitTeam);
+  document.getElementById('submit-application-btn').addEventListener('click', submitApply);
+  document.getElementById('send-chat-btn').addEventListener('click', sendMessage);
+  document.getElementById('broadcast-btn').addEventListener('click', sendBroadcast);
+  
+  // Admin Panel Trigger
+  document.getElementById('admin-nav-btn').addEventListener('click', openAdminPanel);
+
+  // Global Grid Click Delegation (For dynamic cards)
+  document.getElementById('grid').addEventListener('click', e => {
+    const applyBtn = e.target.closest('.btn-apply');
+    if (applyBtn) {
+      const { applyId, applyName, applyRoles } = applyBtn.dataset;
+      openApplyModal(applyId, applyName, JSON.parse(applyRoles));
+      return;
+    }
+
+    const delBtn = e.target.closest('.admin-del-btn');
+    if (delBtn) {
+      deleteTeam(delBtn.dataset.id);
+      return;
+    }
+
+    const featBtn = e.target.closest('.admin-feat-btn');
+    if (featBtn) {
+      toggleFeature(featBtn.dataset.id, featBtn.dataset.feat === 'true');
+      return;
+    }
+
+    const chatBtn = e.target.closest('.open-chat-btn');
+    if (chatBtn) {
+      console.log("Chat button clicked!", chatBtn.dataset);
+      const { tid, tname } = chatBtn.dataset;
+      if (tid && tname) {
+        openChat(tid, tname);
+      } else {
+        console.error("Missing TID or TNAME in dataset");
+      }
+      return;
+    }
+  });
+
+  // Enter Key for Chat
+  document.getElementById('chat-input').addEventListener('keypress', e => {
+    if (e.key === 'Enter') sendMessage();
   });
 }
 
-function renderMessage(data) {
-  const container = document.getElementById('chat-messages');
-  if (!container) return;
+// ── NAV HANDLER ──
 
-  // Handle both snake_case (DB) and camelCase (Socket)
-  const senderId = data.sender_id || data.senderId;
-  const senderName = data.sender_name || data.senderName;
-  const text = data.content || data.message;
-  const isMe = String(senderId) === String(user.id);
+async function handleNav(type) {
+  State.activeNav = type;
+  const grid = document.getElementById('grid');
   
-  const msgDiv = document.createElement('div');
-  msgDiv.className = `msg ${isMe ? 'sent' : 'received'}`;
-  msgDiv.innerHTML = `
-    <div class="msg-sender">${isMe ? 'YOU' : senderName}</div>
-    <div class="msg-text">${text}</div>
-  `;
-  
-  container.appendChild(msgDiv);
-  container.scrollTop = container.scrollHeight;
+  if (type === 'all') fetchTeams();
+  else if (type === 'recommended') {
+    const res = await fetch(`${API}/teams/recommended`, { headers: { 'Authorization': `Bearer ${token}` } });
+    renderCards(await res.json());
+  }
+  else if (type === 'hosted') {
+    const hosted = State.allTeams.filter(t => t.created_by === user.id);
+    grid.innerHTML = hosted.map(t => `
+      <article class="card" style="border-color:var(--pink)">
+        <div class="card-header"><div><h3 class="card-title">${t.name}</h3><p class="card-subtitle">HOSTING</p></div></div>
+        <div class="roles-wrap">${(t.roles || []).map(r => `<span class="role-chip">${r}</span>`).join('')}</div>
+        <div class="card-footer"><button class="btn-apply" style="background:var(--black); color:white; width:100%" onclick="alert('Manage feature coming')">MANAGE TEAM</button></div>
+      </article>`).join('');
+  }
+  else if (type === 'joined') {
+    console.log("Fetching Joined Teams...");
+    const res = await fetch(`${API}/teams/my-teams`, { headers: { 'Authorization': `Bearer ${token}` } });
+    const teams = await res.json();
+    grid.innerHTML = teams.map(t => `
+      <article class="card" style="border-color:var(--green)">
+        <div class="card-header"><div><h3 class="card-title">${t.name}</h3><p class="card-subtitle">MEMBER</p></div></div>
+        <div style="margin:15px 0; background:var(--bg); padding:15px; border-radius:12px; border:2px solid black;">
+          ${t.members.map(m => `<div style="display:flex; justify-content:space-between; font-size:12px; font-weight:900; margin-bottom:5px;"><span>${m.name}</span><span style="opacity:0.5">${m.role_in_team}</span></div>`).join('')}
+        </div>
+        <div class="card-footer">
+          <button class="btn-apply open-chat-btn" 
+                  data-tid="${t.id}" 
+                  data-tname="${t.name.replace(/'/g, "&apos;")}" 
+                  style="background:var(--yellow); width:100%">
+            <i class="fa-solid fa-comments"></i> OPEN CHAT
+          </button>
+        </div>
+      </article>`).join('');
+  }
+  else if (type === 'hackathons') {
+    const res = await fetch(`${API}/hackathons`);
+    const data = await res.json();
+    grid.innerHTML = data.map(h => `
+      <article class="card" style="background:var(--black); color:white">
+        <h3 class="card-title" style="color:var(--yellow)">${h.name}</h3>
+        <p style="font-size:12px; opacity:0.6; margin-bottom:15px;">${h.location}</p>
+        <button class="btn-apply" style="background:var(--white); color:var(--black)" onclick="window.open('${h.website_url}', '_blank')">VISIT EVENT</button>
+      </article>`).join('');
+  }
 }
 
-function closeChat() {
-  document.getElementById('chat-modal').classList.remove('open');
-  currentChatTeamId = null;
+// ── MODAL HELPERS ──
+
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+function openAdminPanel() {
+  openModal('modal-admin');
+  fetchAdminStats();
+}
+
+function openApplyModal(id, name, roles) {
+  State.currentTid = id;
+  document.getElementById('apply-title').textContent = name;
+  document.getElementById('a-role').innerHTML = roles.map(r => `<option value="${r}">${r}</option>`).join('');
+  openModal('modal-apply');
+}
+
+// ── ACTION HANDLERS ──
+
+async function submitTeam() {
+  const roles = [...document.querySelectorAll('#role-inputs input')].map(i => i.value).filter(Boolean);
+  const name = document.getElementById('h-name').value;
+  if (!name || roles.length === 0) return showAlert("NAME & ROLES REQUIRED");
+
+  try {
+    const res = await fetch(`${API}/teams`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ 
+        name, 
+        tech_stack: document.getElementById('h-tech').value.split(',').map(s => s.trim()),
+        roles, 
+        deadline: document.getElementById('h-date').value, 
+        hackathon_id: document.getElementById('h-hack').value 
+      })
+    });
+    if (res.ok) {
+      closeModal('modal-host');
+      fetchTeams();
+      showAlert("TEAM PUBLISHED! ✅");
+    }
+  } catch (err) { showAlert("SUBMISSION FAILED"); }
+}
+
+async function submitApply() {
+  try {
+    await fetch(`${API}/applications`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ 
+        team_id: State.currentTid, 
+        role: document.getElementById('a-role').value, 
+        message: document.getElementById('a-msg').value 
+      })
+    });
+    showAlert("APPLICATION SENT! 🚀");
+    closeModal('modal-apply');
+  } catch (err) { showAlert("APPLICATION FAILED"); }
+}
+
+// ── CHAT SYSTEM ──
+
+function openChat(tid, name) {
+  console.log(`Opening chat for team ${tid}: ${name}`);
+  State.currentTid = tid;
+  
+  const titleEl = document.getElementById('chat-title');
+  const msgsEl = document.getElementById('chat-msgs');
+  
+  if (titleEl) titleEl.textContent = name.toUpperCase();
+  if (msgsEl) msgsEl.innerHTML = '<p style="text-align:center; padding:20px; opacity:0.5; font-weight:900;">SYNCING CHANNEL...</p>';
+  
+  openModal('modal-chat');
+  
+  // Join room
+  console.log("Emitting join_room:", tid);
+  socket.emit('join_room', tid);
+  
+  // Fetch History
+  fetch(`${API}/chat/${tid}`, { headers: { 'Authorization': `Bearer ${token}` } })
+    .then(r => r.json())
+    .then(msgs => {
+      console.log(`Fetched ${msgs.length} messages`);
+      if (msgsEl) {
+        msgsEl.innerHTML = '';
+        if (msgs.length === 0) {
+          msgsEl.innerHTML = '<p style="text-align:center; padding:40px; opacity:0.2; font-weight:900;">NO MESSAGES YET</p>';
+        } else {
+          msgs.forEach(m => renderMsg(m));
+        }
+      }
+    })
+    .catch(err => {
+      console.error("Chat history fetch failed:", err);
+      if (msgsEl) msgsEl.innerHTML = '<p style="color:var(--red); text-align:center; padding:20px;">FAILED TO LOAD HISTORY</p>';
+    });
 }
 
 function sendMessage() {
   const input = document.getElementById('chat-input');
-  const message = input.value.trim();
-  if (!message || !currentChatTeamId) return;
-
-  const data = {
-    teamId: currentChatTeamId,
+  if (!input.value.trim() || !State.currentTid) return;
+  
+  socket.emit('send_message', {
+    teamId: State.currentTid,
     senderId: user.id,
     senderName: user.name,
-    message: message
-  };
-
-  socket.emit('send_message', data);
+    message: input.value
+  });
   input.value = '';
 }
 
-socket.on('receive_message', (data) => {
-  console.log("Socket received message:", data);
-  // Use loose equality or cast to String to be safe
-  if (String(data.teamId) !== String(currentChatTeamId)) {
-    console.log("Message ignored: team mismatch", data.teamId, currentChatTeamId);
-    return;
-  }
-  renderMessage(data);
-});
-
-// Allow Enter key to send message
-document.getElementById('chat-input').addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') sendMessage();
-});
-
-// ── API Integration ──────────────────────────────────────
-async function fetchTeams() {
-  try {
-    const res = await fetch(`${API}/teams`);
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-    allTeams = data;
-    renderCards(allTeams);
-  } catch (err) {
-    console.error("Failed to fetch teams:", err);
-  }
-}
-
-fetchTeams();
-
-// ── Search ───────────────────────────────────────────────
-document.getElementById('search-input').addEventListener('input', e => {
-  const q = e.target.value.toLowerCase();
-  renderCards(allTeams.filter(t =>
-    t.name.toLowerCase().includes(q) || (t.by || '').toLowerCase().includes(q)
-  ));
-});
-
-// ── Modal ────────────────────────────────────────────────
-function openModal()  { document.getElementById('modal').classList.add('open') }
-function closeModal() { document.getElementById('modal').classList.remove('open') }
-
-document.getElementById('modal').addEventListener('click', e => {
-  if (e.target === document.getElementById('modal')) closeModal();
-});
-
-document.getElementById('apply-modal').addEventListener('click', e => {
-  if (e.target === document.getElementById('apply-modal')) closeApplyModal();
-});
-
-let currentApplyTeamId = null;
-
-function openApplyModal(teamId, teamName, roles) {
-  currentApplyTeamId = teamId;
-  const modal = document.getElementById('apply-modal');
-  const roleSelect = document.getElementById('a-role');
+function renderMsg(m) {
+  const container = document.getElementById('chat-msgs');
+  const div = document.createElement('div');
+  const isMe = (m.sender_id || m.senderId) == user.id;
   
-  // Fill roles
-  roleSelect.innerHTML = roles.map(r => `<option value="${r}">${r}</option>`).join('');
-  if (!roles.length) roleSelect.innerHTML = '<option value="General">General Member</option>';
-
-  modal.querySelector('.modal-title').textContent = `APPLY FOR: ${teamName}`;
-  modal.classList.add('open');
+  div.className = `msg ${isMe ? 'sent' : 'received'}`;
+  div.innerHTML = `
+    <div style="font-size:9px; font-weight:900; margin-bottom:3px; opacity:0.4;">${isMe ? 'YOU' : (m.sender_name || m.senderName)}</div>
+    <div>${m.content || m.message}</div>
+  `;
+  
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
 }
 
-function closeApplyModal() {
-  document.getElementById('apply-modal').classList.remove('open');
-  document.getElementById('apply-modal-error').style.display = 'none';
-  document.getElementById('a-message').value = '';
+// ── ADMIN OPS ──
+
+async function fetchAdminStats() {
+  const res = await fetch(`${API}/admin/stats`, { headers: { 'Authorization': `Bearer ${token}` } });
+  const d = await res.json();
+  document.getElementById('stat-u').textContent = d.users;
+  document.getElementById('stat-t').textContent = d.teams;
+  document.getElementById('stat-a').textContent = d.applications;
 }
 
-function submitApply() {
-  const role    = document.getElementById('a-role').value;
-  const message = document.getElementById('a-message').value.trim();
-  const btn     = document.getElementById('apply-submit-btn');
-  const errorEl = document.getElementById('apply-modal-error');
+async function sendBroadcast() {
+  const msg = document.getElementById('admin-bc').value;
+  if (!msg) return;
+  await fetch(`${API}/admin/broadcast`, { 
+    method: 'POST', 
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+    body: JSON.stringify({ message: msg }) 
+  });
+  showAlert("BROADCAST SENT! 📢");
+  document.getElementById('admin-bc').value = '';
+}
 
-  errorEl.style.display = 'none';
-  if (!message) {
-    errorEl.textContent = 'Please add a short message or portfolio link';
-    errorEl.style.display = 'block';
-    return;
+async function deleteTeam(id) {
+  if (!confirm("ADMIN: PERMANENTLY DELETE TEAM?")) return;
+  await fetch(`${API}/teams/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+  fetchTeams();
+}
+
+async function toggleFeature(id, f) {
+  await fetch(`${API}/admin/feature-team/${id}`, { 
+    method: 'PUT', 
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+    body: JSON.stringify({ is_featured: f }) 
+  });
+  fetchTeams();
+}
+
+// ── UTILS ──
+
+function addRoleField() {
+  const div = document.createElement('div');
+  div.style.display = 'flex'; div.style.gap = '10px'; div.style.marginBottom = '10px';
+  div.innerHTML = `<input type="text" placeholder="e.g. Frontend Dev" style="flex:1"><button class="btn-icon" style="width:45px; height:45px; background:var(--red); color:white;" onclick="this.parentElement.remove()"><i class="fa-solid fa-minus"></i></button>`;
+  document.getElementById('role-inputs').appendChild(div);
+}
+
+function showAlert(text) {
+  const container = document.getElementById('alerts');
+  const div = document.createElement('div');
+  div.style.background = 'white'; div.style.border = '4px solid black'; div.style.padding = '15px 25px';
+  div.style.borderRadius = '15px'; div.style.boxShadow = '6px 6px 0px black';
+  div.style.marginBottom = '10px'; div.style.fontWeight = '900';
+  div.textContent = text;
+  container.appendChild(div);
+  setTimeout(() => div.remove(), 4000);
+}
+
+async function fetchHackathons() {
+  const res = await fetch(`${API}/hackathons`);
+  const data = await res.json();
+  const sel = document.getElementById('h-hack');
+  if (sel) sel.innerHTML = '<option value="">NONE</option>' + data.map(h => `<option value="${h.id}">${h.name}</option>`).join('');
+}
+
+async function fetchNotifications() {
+  const res = await fetch(`${API}/notifications`, { headers: { 'Authorization': `Bearer ${token}` } });
+  const data = await res.json();
+  const unread = data.filter(n => !n.is_read).length;
+  const count = document.getElementById('notif-count');
+  if (count) {
+    count.style.display = unread > 0 ? 'flex' : 'none';
+    count.textContent = unread;
   }
+}
 
-  const oldText = btn.textContent;
-  btn.textContent = 'SUBMITTING...';
-  btn.disabled = true;
-
-  fetch(`${API}/applications`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify({
-      team_id: currentApplyTeamId,
-      role: role,
-      message: message
-    })
-  })
-  .then(res => res.json().then(data => ({ ok: res.ok, data })))
-  .then(({ ok, data }) => {
-    if (!ok) throw new Error(data.error || 'Failed to submit application');
-    
-    alert('Application submitted successfully! ✅');
-    closeApplyModal();
-  })
-  .catch(err => {
-    errorEl.textContent = err.message;
-    errorEl.style.display = 'block';
-  })
-  .finally(() => {
-    btn.textContent = oldText;
-    btn.disabled = false;
+function setupSocketListeners() {
+  socket.on('receive_message', m => {
+    if (m.teamId == State.currentTid) renderMsg(m);
+  });
+  
+  socket.on('notification', () => {
+    fetchNotifications();
+    showAlert("NEW ALERT! 🔔");
   });
 }
 
-// ── Requests Logic ───────────────────────────────────────
-function openRequestsModal(teamId) {
-  const modal = document.getElementById('requests-modal');
-  modal.classList.add('open');
-  const container = document.getElementById('requests-list-container');
-  container.innerHTML = '<p style="text-align:center;padding:20px;">Loading applications...</p>';
-
-  fetch(`${API}/applications/team/${teamId}`, {
-    headers: { 'Authorization': `Bearer ${token}` }
-  })
-  .then(res => res.json())
-  .then(apps => {
-    if (!apps.length) {
-      container.innerHTML = '<p style="text-align:center;padding:20px;font-size:14px;color:#888;">No applications yet for this team.</p>';
-      return;
-    }
-    container.innerHTML = apps.map(a => `
-      <div class="request-item">
-        <div class="req-left" onclick="openUserProfileModal(${a.applicant_id})">
-          <div class="req-avatar"><i class="fa-solid fa-user"></i></div>
-          <div class="req-info">
-            <div class="req-name">${a.applicant_name}</div>
-            <div class="req-role">${a.role}</div>
-            <div class="req-message">"${a.message}"</div>
-          </div>
-        </div>
-        <div class="req-actions">
-          ${a.status === 'pending' ? `
-            <button class="req-btn accept" onclick="updateAppStatus(${a.id}, 'accepted', ${teamId})">ACCEPT</button>
-            <button class="req-btn reject" onclick="updateAppStatus(${a.id}, 'rejected', ${teamId})">REJECT</button>
-          ` : `
-            <span class="status-badge ${a.status}">${a.status.toUpperCase()}</span>
-          `}
-        </div>
-      </div>
-    `).join('');
-  })
-  .catch(err => {
-    container.innerHTML = `<p style="color:var(--red);text-align:center;padding:20px;">Error: ${err.message}</p>`;
-  });
+function logout() { 
+  localStorage.clear(); 
+  window.location.href = '../Authentication/login.html'; 
 }
 
-function closeRequestsModal() {
-  document.getElementById('requests-modal').classList.remove('open');
-}
-
-function updateAppStatus(appId, status, teamId) {
-  if (!confirm(`Are you sure you want to ${status} this application?`)) return;
-
-  fetch(`${API}/applications/${appId}/status`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify({ status })
-  })
-  .then(res => {
-    if (!res.ok) throw new Error('Update failed');
-    return res.json();
-  })
-  .then(() => {
-    alert(`Application ${status}!`);
-    openRequestsModal(teamId); // Refresh list
-  })
-  .catch(err => alert(err.message));
-}
-
-// ── Profile View Logic ───────────────────────────────────
-function openUserProfileModal(userId) {
-  const modal = document.getElementById('user-profile-modal');
-  modal.classList.add('open');
-  const container = document.getElementById('user-profile-content');
-  container.innerHTML = '<p>Loading profile...</p>';
-
-  fetch(`${API}/users/${userId}`, {
-    headers: { 'Authorization': `Bearer ${token}` }
-  })
-  .then(res => res.json())
-  .then(u => {
-    const skillsArr = u.skills ? u.skills.split(',').map(s => s.trim()) : [];
-    container.innerHTML = `
-      <div class="profile-view-avatar"><i class="fa-solid fa-user"></i></div>
-      <div class="profile-view-name">${u.name}</div>
-      <div class="profile-view-email">${u.email}</div>
-      <div class="profile-view-bio">${u.bio || 'No bio provided.'}</div>
-      <div class="profile-view-skills">
-        ${skillsArr.map(s => `<span class="skill-tag">${s}</span>`).join('')}
-      </div>
-      <div class="profile-view-links">
-        ${u.github_url ? `<a href="${u.github_url}" target="_blank" class="profile-link"><i class="fa-brands fa-github"></i></a>` : ''}
-        ${u.linkedin_url ? `<a href="${u.linkedin_url}" target="_blank" class="profile-link"><i class="fa-brands fa-linkedin"></i></a>` : ''}
-      </div>
-    `;
-  })
-  .catch(err => {
-    container.innerHTML = `<p style="color:var(--red)">Error: ${err.message}</p>`;
-  });
-}
-
-function closeUserProfileModal() {
-  document.getElementById('user-profile-modal').classList.remove('open');
-}
-
-// Close modals on overlay click
-['requests-modal', 'user-profile-modal'].forEach(id => {
-  document.getElementById(id).addEventListener('click', e => {
-    if (e.target === document.getElementById(id)) {
-      document.getElementById(id).classList.remove('open');
-    }
-  });
-});
-
-function addRole() {
-  const builder = document.getElementById('roles-builder');
-  const row = document.createElement('div');
-  row.className = 'role-input-row';
-  row.innerHTML = `
-    <input type="text" placeholder="e.g. Backend Developer">
-    <button onclick="removeRole(this)"><i class="fa-solid fa-minus"></i></button>`;
-  builder.appendChild(row);
-}
-
-function removeRole(btn) {
-  if (document.querySelectorAll('.role-input-row').length > 1)
-    btn.parentElement.remove();
-}
-
-function showModalError(msg) {
-  const el = document.getElementById('modal-error');
-  el.textContent = msg;
-  el.style.display = 'block';
-}
-
-function submitHost() {
-  const name     = document.getElementById('f-name').value.trim();
-  const by       = document.getElementById('f-by').value.trim();
-  const size     = document.getElementById('f-size').value;
-  const deadline = document.getElementById('f-deadline').value;
-  const roles    = [...document.querySelectorAll('.role-input-row input')]
-                     .map(i => i.value.trim()).filter(Boolean);
-
-  document.getElementById('modal-error').style.display = 'none';
-  if (!name)         return showModalError('Team name is required');
-  if (!by)           return showModalError('Hosted by is required');
-  if (!roles.length) return showModalError('Add at least one role');
-
-  const desc     = document.getElementById('f-desc').value.trim();
-  const tech     = document.getElementById('f-tech').value.trim().split(',').map(s => s.trim()).filter(Boolean);
-
-  const btn = document.querySelector('#modal .submit-btn');
-  const oldText = btn.textContent;
-  btn.textContent = 'HOSTING...';
-  btn.disabled = true;
-
-  fetch(`${API}/teams`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify({
-      name: name.toUpperCase(),
-      hosted_by: by,
-      description: desc,
-      tech_stack: tech,
-      roles: roles,
-      team_size: size,
-      deadline: deadline
-    })
-  })
-  .then(res => res.json().then(data => ({ ok: res.ok, data })))
-  .then(({ ok, data }) => {
-    if (!ok) throw new Error(data.error || 'Failed to host team');
-    
-    allTeams.unshift(data);
-    renderCards(allTeams);
-    closeModal();
-    
-    // Reset form
-    ['f-name','f-by','f-desc','f-tech','f-deadline'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('f-size').value = '4';
-    document.getElementById('roles-builder').innerHTML = `
-      <div class="role-input-row">
-        <input type="text" placeholder="e.g. UI/UX Designer">
-        <button onclick="removeRole(this)"><i class="fa-solid fa-minus"></i></button>
-      </div>`;
-  })
-  .catch(err => {
-    showModalError(err.message);
-  })
-  .finally(() => {
-    btn.textContent = oldText;
-    btn.disabled = false;
-  });
+function toggleNotifs() {
+  showAlert("NOTIFICATIONS SYNCED 🔔");
+  fetchNotifications();
 }

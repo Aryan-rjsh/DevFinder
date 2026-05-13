@@ -5,13 +5,11 @@
 
     <meta charset="UTF-8">
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>DevFinder — Sign Up</title>
 
-    <link rel="stylesheet"
-          href="style.css">
+    <link rel="stylesheet" href="style.css">
 
 </head>
 
@@ -23,8 +21,7 @@
 
         <div class="left-section">
 
-            <img src="hackathon-bg.png"
-                 alt="Hackathon Illustration">
+            <img src="hackathon-bg.png" alt="Hackathon Illustration">
 
         </div>
 
@@ -32,7 +29,7 @@
 
         <div class="right-section">
 
-            <div class="login-card">
+            <div class="login-card" id="card">
 
                 <h1>Create<br>Account</h1>
 
@@ -41,41 +38,21 @@
                 <form id="signup-form">
 
                     <div class="input-box">
-                        <input
-                            type="text"
-                            id="signup-name"
-                            placeholder="Full Name"
-                            autocomplete="name"
-                            required>
+                        <input type="text" id="signup-name" placeholder="Full Name" autocomplete="name" required>
                     </div>
 
                     <div class="input-box">
-                        <input
-                            type="email"
-                            id="signup-email"
-                            placeholder="Email Address"
-                            autocomplete="email"
-                            required>
+                        <input type="email" id="signup-email" placeholder="Email Address" autocomplete="email" required>
                     </div>
 
                     <div class="input-box">
-                        <input
-                            type="text"
-                            id="signup-username"
-                            placeholder="Username"
-                            autocomplete="username"
-                            required>
+                        <input type="text" id="signup-username" placeholder="Username" autocomplete="username" required>
                     </div>
 
                     <div class="input-box password-box">
-                        <input
-                            type="password"
-                            id="signup-password"
-                            placeholder="Password"
-                            autocomplete="new-password"
+                        <input type="password" id="signup-password" placeholder="Password" autocomplete="new-password"
                             required>
-                        <span class="toggle-password"
-                              onclick="togglePassword('signup-password', this)">👁</span>
+                        <span class="toggle-password" onclick="togglePassword('signup-password', this)">👁️</span>
                     </div>
 
                     <!-- Password strength bar -->
@@ -85,23 +62,15 @@
                     <p class="strength-label" id="strength-label"></p>
 
                     <div class="input-box password-box">
-                        <input
-                            type="password"
-                            id="signup-confirm"
-                            placeholder="Confirm Password"
-                            autocomplete="new-password"
-                            required>
-                        <span class="toggle-password"
-                              onclick="togglePassword('signup-confirm', this)">👁</span>
+                        <input type="password" id="signup-confirm" placeholder="Confirm Password"
+                            autocomplete="new-password" required>
+                        <span class="toggle-password" onclick="togglePassword('signup-confirm', this)">👁️</span>
                     </div>
 
                     <!-- Error / success message -->
                     <p class="error-msg" id="error-msg"></p>
 
-                    <button
-                        class="login-btn"
-                        type="submit"
-                        id="signup-btn">
+                    <button class="login-btn" type="submit" id="signup-btn">
                         Create Account
                     </button>
 
@@ -111,12 +80,10 @@
 
                 <div class="social-icons">
                     <button class="social-btn google">
-                        <img src="https://www.svgrepo.com/show/475656/google-color.svg"
-                             alt="Google" width="20"> Google
+                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" width="20"> Google
                     </button>
                     <button class="social-btn github">
-                        <img src="https://www.svgrepo.com/show/512317/github-142.svg"
-                             alt="GitHub" width="20"> GitHub
+                        <img src="https://www.svgrepo.com/show/512317/github-142.svg" alt="GitHub" width="20"> GitHub
                     </button>
                 </div>
 

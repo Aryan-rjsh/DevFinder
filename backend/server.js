@@ -18,18 +18,18 @@ try {
 
 dotenv.config();
 
-
-
 // Global Error Handlers to catch silent crashes
 process.on("uncaughtException", (err) => console.error("CRITICAL ERROR:", err));
 process.on("unhandledRejection", (reason) => console.error("PROMISE REJECTION:", reason));
-
 
 const authRoutes = require("./routes/auth");
 const teamRoutes = require("./routes/teams");
 const userRoutes = require("./routes/users");
 const applicationRoutes = require("./routes/applications");
 const chatRoutes = require("./routes/chat");
+const notificationRoutes = require("./routes/notifications");
+const hackathonRoutes    = require("./routes/hackathons");
+const adminRoutes        = require("./routes/admin");
 
 const app = express();
 const http = require("http").createServer(app);
@@ -37,14 +37,25 @@ const io = require("socket.io")(http, {
     cors: { origin: "*" }
 });
 
+// Set socketio globally so routes can access it
+app.set("socketio", io);
+
 app.use(cors());
 app.use(express.json());
+
+app.use((req, res, next) => {
+    req.io = io;
+    next();
+});
 
 app.use("/api/auth", authRoutes);
 app.use("/api/teams", teamRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/applications", applicationRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/hackathons", hackathonRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.get("/", (req, res) => res.send("DevFinder API running ✅"));
 
@@ -54,19 +65,18 @@ io.on("connection", (socket) => {
 
     socket.on("join_room", (teamId) => {
         socket.join(`team_${teamId}`);
-        console.log(`User ${socket.id} joined room: team_${teamId}`);
+    });
+
+    socket.on("join_user", (userId) => {
+        socket.join(`user_${userId}`);
     });
 
     socket.on("send_message", async (data) => {
-        // data: { teamId, senderId, senderName, message }
         try {
-            // Save to database (matched to user's 'content' column)
             await pool.query(
                 "INSERT INTO messages (team_id, sender_id, content) VALUES ($1, $2, $3)",
                 [data.teamId, data.senderId, data.message]
             );
-            
-            // Broadcast with timestamp
             const broadcastData = { ...data, timestamp: new Date().toLocaleTimeString() };
             io.to(`team_${data.teamId}`).emit("receive_message", broadcastData);
         } catch (err) {

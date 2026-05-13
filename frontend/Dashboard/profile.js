@@ -1,348 +1,247 @@
-const API   = 'http://127.0.0.1:5000/api';
-const token = localStorage.getItem('token');
-let   user  = JSON.parse(localStorage.getItem('user') || 'null');
+const API    = 'http://127.0.0.1:5000/api';
+const token  = localStorage.getItem('token');
+const user   = JSON.parse(localStorage.getItem('user') || 'null');
 
-// ── Auth guard ───────────────────────────────────────────
 if (!token || !user) window.location.href = '../Authentication/login.html';
 
-// ── Sidebar ──────────────────────────────────────────────
-let sidebarOpen = true;
-function toggleSidebar() {
-  sidebarOpen = !sidebarOpen;
-  const sb  = document.getElementById('sidebar');
-  const btn = document.getElementById('collapse-btn');
-  const ico = document.getElementById('collapse-icon');
-  const bg  = document.querySelector('.bg-wrap');
-  sb.classList.toggle('collapsed', !sidebarOpen);
-  btn.style.left           = sidebarOpen ? '270px' : '0px';
-  ico.style.transform      = sidebarOpen ? '' : 'rotate(180deg)';
-  bg.style.left            = sidebarOpen ? '270px' : '0px';
-}
+let profileData = null;
 
-function logout() {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
-  window.location.href = '../Authentication/login.html';
-}
-
-// ── Toast ────────────────────────────────────────────────
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  document.getElementById('toast-msg').textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
-}
-
-// ── Load profile from DB ─────────────────────────────────
-async function loadProfile() {
+document.addEventListener('DOMContentLoaded', async () => {
+  console.log("Profile Initializing...");
+  
   try {
-    const res  = await fetch(`${API}/users/me`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-
-    // Merge fresh DB data into user
-    user = { ...user, ...data };
-    localStorage.setItem('user', JSON.stringify(user));
-    renderProfile();
+    // Initial Load
+    await loadProfile();
+    await fetchHostedTeams();
+    
+    // Listeners
+    setupProfileListeners();
+    
+    console.log("Profile Ready ✅");
   } catch (err) {
-    // Fallback to localStorage if API fails
-    renderProfile();
+    console.error("Profile Init Error:", err);
+    showAlert("COULD NOT LOAD PROFILE");
   }
-}
+});
 
-// ── Render profile data ──────────────────────────────────
-function renderProfile() {
-  const name   = user.name      || '';
-  const email  = user.email     || '';
-  const bio    = user.bio       || '';
-  const github = user.github_url   || '';
-  const linkedin = user.linkedin_url || '';
-  const skills = Array.isArray(user.skills) ? user.skills : [];
+// ── DATA LOADING ──
 
-  // Sidebar + header
-  document.getElementById('sidebar-name').textContent = name.toUpperCase();
-  document.getElementById('p-name').textContent       = name;
-  document.getElementById('p-email').textContent      = email;
-
-  // Avatar initials
-  const avatar = document.getElementById('big-avatar');
-  if (!avatar.querySelector('img')) {
-    avatar.textContent = name.charAt(0).toUpperCase() || '?';
+async function loadProfile() {
+  const res = await fetch(`${API}/users/me`, { headers: { 'Authorization': `Bearer ${token}` } });
+  profileData = await res.json();
+  
+  // Sidebar Sync
+  document.getElementById('sidebar-u-name').textContent = profileData.name.toUpperCase();
+  if (profileData.is_admin) {
+    document.getElementById('sidebar-u-role').textContent = 'ADMINISTRATOR';
+    document.getElementById('sidebar-avatar-circle').style.background = 'var(--red)';
   }
 
-  // Member since
-  if (user.created_at) {
-    const d = new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    document.getElementById('p-since').textContent = `Member since ${d}`;
-  }
-
-  // View mode fields
-  document.getElementById('v-name').textContent = name || '—';
-  document.getElementById('v-bio').textContent  = bio  || 'No bio added yet.';
-  document.getElementById('v-bio').className    = 'vr-val' + (bio ? '' : ' empty');
-
-  // Skills view
-  const vs = document.getElementById('v-skills');
-  vs.innerHTML = skills.length
-    ? skills.map(s => `<div class="skill-chip view-chip"><span>${s}</span></div>`).join('')
-    : `<span style="font-size:13px;color:#ccc;font-style:italic">No skills added yet.</span>`;
-
+  // Left Island
+  document.getElementById('p-full-name').textContent = profileData.name.toUpperCase();
+  document.getElementById('p-email').textContent = profileData.email;
+  document.getElementById('p-avatar-big').textContent = profileData.name.charAt(0).toUpperCase();
+  
   // Links
-  const gh = document.getElementById('p-github');
-  gh.textContent = github || 'Not added';
-  gh.href        = github || '#';
-  gh.className   = 'link-val' + (github ? '' : ' empty');
-
-  const li = document.getElementById('p-linkedin');
-  li.textContent = linkedin || 'Not added';
-  li.href        = linkedin || '#';
-  li.className   = 'link-val' + (linkedin ? '' : ' empty');
-
-  // Prefill edit fields
-  document.getElementById('e-name').value    = name;
-  document.getElementById('e-bio').value     = bio;
-  document.getElementById('e-github').value  = github;
-  document.getElementById('e-linkedin').value = linkedin;
-
-  // Skills in edit mode
-  editSkills = [...skills];
-  renderEditSkills();
-
-  // Hosted teams (from localStorage for now)
-  renderHosted();
+  document.getElementById('v-github').textContent = profileData.github_url || 'Not added';
+  document.getElementById('v-linkedin').textContent = profileData.linkedin_url || 'Not added';
+  document.getElementById('p-github-link').href = profileData.github_url || '#';
+  document.getElementById('p-linkedin-link').href = profileData.linkedin_url || '#';
+  
+  // Right Island
+  document.getElementById('v-bio').textContent = profileData.bio || 'No bio added yet.';
+  document.getElementById('p-since').textContent = `MEMBER SINCE ${new Date(profileData.created_at).getFullYear()}`;
+  
+  // Skills
+  renderSkills(profileData.skills || []);
 }
 
-// ── Edit toggle ──────────────────────────────────────────
-let editing = false;
+function renderSkills(skills) {
+  const vWrap = document.getElementById('v-skills');
+  const eWrap = document.getElementById('e-skills');
+  
+  vWrap.innerHTML = skills.length ? skills.map(s => `<span class="skill-tag">${s.toUpperCase()}</span>`).join('') : '<p style="opacity:0.5">No skills listed</p>';
+  eWrap.innerHTML = skills.map(s => `
+    <span class="skill-tag" style="background:var(--yellow)">
+      ${s.toUpperCase()}
+      <button onclick="removeSkill('${s}')"><i class="fa-solid fa-xmark"></i></button>
+    </span>`).join('');
+}
+
+// ── LISTENERS ──
+
+function setupProfileListeners() {
+  document.getElementById('edit-trigger-btn').addEventListener('click', toggleEdit);
+  document.getElementById('cancel-edit-btn').addEventListener('click', toggleEdit);
+  document.getElementById('save-profile-btn').addEventListener('click', saveProfile);
+  document.getElementById('add-skill-btn').addEventListener('click', addSkill);
+  
+  document.getElementById('skill-input').addEventListener('keypress', e => {
+    if (e.key === 'Enter') addSkill();
+  });
+
+  document.getElementById('avatar-input').addEventListener('change', uploadAvatar);
+}
+
+// ── EDIT MODE ──
+
 function toggleEdit() {
-  editing = !editing;
-  document.getElementById('view-mode').classList.toggle('hide', editing);
-  document.getElementById('edit-mode').classList.toggle('show', editing);
-  const btn   = document.getElementById('edit-toggle-btn');
-  const icon  = document.getElementById('edit-btn-icon');
-  const label = document.getElementById('edit-btn-label');
-  btn.classList.toggle('active', editing);
-  icon.className  = editing ? 'fa-solid fa-xmark' : 'fa-solid fa-pen';
-  label.textContent = editing ? 'CANCEL EDIT' : 'EDIT PROFILE';
+  const vMode = document.getElementById('view-mode');
+  const eMode = document.getElementById('edit-mode');
+  const isEditing = eMode.style.display === 'block';
+
+  if (!isEditing) {
+    // Populate fields
+    document.getElementById('e-name').value = profileData.name;
+    document.getElementById('e-bio').value = profileData.bio || '';
+    document.getElementById('e-github').value = profileData.github_url || '';
+    document.getElementById('e-linkedin').value = profileData.linkedin_url || '';
+    
+    vMode.style.display = 'none';
+    eMode.style.display = 'block';
+    document.getElementById('edit-trigger-btn').style.display = 'none';
+  } else {
+    vMode.style.display = 'block';
+    eMode.style.display = 'none';
+    document.getElementById('edit-trigger-btn').style.display = 'block';
+  }
 }
 
-function cancelEdit() {
-  editing = true;
-  toggleEdit();
-  document.getElementById('save-error').style.display = 'none';
-  // Reset edit skills to current user skills
-  editSkills = Array.isArray(user.skills) ? [...user.skills] : [];
-  renderEditSkills();
+async function saveProfile() {
+  const updated = {
+    name: document.getElementById('e-name').value,
+    bio: document.getElementById('e-bio').value,
+    github_url: document.getElementById('e-github').value,
+    linkedin_url: document.getElementById('e-linkedin').value,
+    skills: profileData.skills
+  };
+
+  try {
+    const res = await fetch(`${API}/users/update`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(updated)
+    });
+    
+    if (res.ok) {
+      showAlert("PROFILE UPDATED! ✅");
+      await loadProfile();
+      toggleEdit();
+    }
+  } catch (err) { showAlert("SAVE FAILED"); }
 }
 
-// ── Skills chip system ───────────────────────────────────
-let editSkills = [];
-
-function renderEditSkills() {
-  const wrap = document.getElementById('e-skills');
-  wrap.innerHTML = editSkills.map((s, i) => `
-    <div class="skill-chip">
-      <span>${s}</span>
-      <button onclick="removeSkill(${i})" title="Remove">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
-    </div>`).join('');
-}
+// ── SKILLS ──
 
 function addSkill() {
   const input = document.getElementById('skill-input');
-  const val   = input.value.trim();
+  const val = input.value.trim();
   if (!val) return;
-  // Support comma-separated entry
-  val.split(',').map(s => s.trim()).filter(Boolean).forEach(s => {
-    if (!editSkills.includes(s)) editSkills.push(s);
-  });
-  input.value = '';
-  renderEditSkills();
-}
-
-function removeSkill(i) {
-  editSkills.splice(i, 1);
-  renderEditSkills();
-}
-
-function skillKeydown(e) {
-  if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addSkill(); }
-}
-
-// ── Save profile ─────────────────────────────────────────
-async function saveProfile() {
-  const name     = document.getElementById('e-name').value.trim();
-  const bio      = document.getElementById('e-bio').value.trim();
-  const github   = document.getElementById('e-github').value.trim();
-  const linkedin = document.getElementById('e-linkedin').value.trim();
-  const errEl    = document.getElementById('save-error');
-  errEl.style.display = 'none';
-
-  if (!name) {
-    errEl.textContent = 'Name cannot be empty';
-    errEl.style.display = 'block';
-    return;
-  }
-
-  try {
-    const res  = await fetch(`${API}/users/profile`, {
-      method : 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization : `Bearer ${token}`
-      },
-      body: JSON.stringify({ name, bio, skills: editSkills, github_url: github, linkedin_url: linkedin })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-
-    // Update local state and UI
-    user = data;
-    localStorage.setItem('user', JSON.stringify(user));
-
-    renderProfile();
-    cancelEdit();
-    showToast('Profile updated successfully!');
-  } catch (err) {
-    showToast('Error: ' + err.message);
-  }
-}
-
-// ── Avatar upload ────────────────────────────────────────
-document.getElementById('avatar-input').addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    const avatar = document.getElementById('big-avatar');
-    avatar.innerHTML = `<img src="${ev.target.result}" alt="avatar">`;
-    // Store in localStorage as base64 (replace with real upload later)
-    localStorage.setItem('avatar', ev.target.result);
-    showToast('Profile photo updated!');
-  };
-  reader.readAsDataURL(file);
-});
-
-// Load saved avatar
-const savedAvatar = localStorage.getItem('avatar');
-if (savedAvatar) {
-  document.getElementById('big-avatar').innerHTML = `<img src="${savedAvatar}" alt="avatar">`;
-}
-
-// ── Hosted teams ─────────────────────────────────────────
-async function renderHosted() {
-  const grid = document.getElementById('hosted-grid');
   
+  if (!profileData.skills) profileData.skills = [];
+  if (!profileData.skills.includes(val)) {
+    profileData.skills.push(val);
+    renderSkills(profileData.skills);
+  }
+  input.value = '';
+}
+
+function removeSkill(skill) {
+  profileData.skills = profileData.skills.filter(s => s !== skill);
+  renderSkills(profileData.skills);
+}
+
+// ── HOSTED TEAMS ──
+
+async function fetchHostedTeams() {
   try {
-    // Fetch teams created by the user from the backend
     const res = await fetch(`${API}/teams`);
     const allTeams = await res.json();
-    if (!res.ok) throw new Error(allTeams.error);
-
-    // Filter teams created by the current user
     const hosted = allTeams.filter(t => t.created_by === user.id);
-
+    
+    const list = document.getElementById('hosted-list');
     if (!hosted.length) {
-      grid.innerHTML = `
-        <div class="empty-hosted">
-          <i class="fa-solid fa-layer-group"></i>
-          No hosted teams yet
-        </div>`;
+      list.innerHTML = '<p style="text-align:center; padding:40px; opacity:0.3; font-weight:800;">NO TEAMS HOSTED YET</p>';
       return;
     }
-
-    grid.innerHTML = hosted.map(t => `
-      <div class="hosted-card">
-        <div class="hosted-icon"><i class="fa-solid fa-trophy"></i></div>
-        <div class="hosted-info">
-          <div class="hosted-name">${t.name}</div>
-          <div class="hosted-meta">${(t.roles || []).join(' · ')} · Deadline ${t.deadline || 'TBD'}</div>
+    
+    list.innerHTML = hosted.map(t => `
+      <div class="hosted-team-row">
+        <div>
+          <h4>${t.name}</h4>
+          <p style="font-size:10px; font-weight:900; opacity:0.6;">${t.team_size} MEMBERS NEEDED</p>
         </div>
-        <button class="view-applicants-btn" onclick="viewApplicants(${t.id}, '${t.name.replace(/'/g, "\\'")}')">
+        <button class="btn-host" style="font-size:14px; background:var(--white); color:black;" onclick="openApplicants(${t.id}, '${t.name.replace(/'/g, "\\'")}')">
           VIEW APPLICANTS
         </button>
-      </div>`).join('');
-  } catch (err) {
-    console.error("Failed to load hosted teams:", err);
-    grid.innerHTML = `<div class="empty-hosted">Error loading teams</div>`;
-  }
+      </div>
+    `).join('');
+  } catch (err) { console.error("Hosted teams failed"); }
 }
 
-// ── Applicant Management ─────────────────────────────────
-function closeApplicantsModal() {
-  document.getElementById('applicants-modal').classList.remove('open');
-}
+// ── APPLICANTS ──
 
-async function viewApplicants(teamId, teamName) {
-  document.getElementById('m-team-name').textContent = `APPLICANTS: ${teamName}`;
+async function openApplicants(tid, name) {
+  document.getElementById('m-team-name').textContent = name.toUpperCase();
+  document.getElementById('modal-applicants').classList.add('active');
   const list = document.getElementById('applicant-list');
-  list.innerHTML = '<div class="empty-hosted">Loading...</div>';
-  document.getElementById('applicants-modal').classList.add('open');
+  list.innerHTML = '<p style="text-align:center; padding:20px; font-weight:800;">LOADING...</p>';
 
   try {
-    const res = await fetch(`${API}/applications/team/${teamId}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-
-    if (!data.length) {
-      list.innerHTML = '<div class="empty-hosted">No applicants yet</div>';
+    const res = await fetch(`${API}/applications/team/${tid}`, { headers: { 'Authorization': `Bearer ${token}` } });
+    const apps = await res.json();
+    
+    if (!apps.length) {
+      list.innerHTML = '<p style="text-align:center; padding:20px; font-weight:800; opacity:0.4;">NO APPLICANTS YET</p>';
       return;
     }
 
-    list.innerHTML = data.map(a => `
-      <div class="applicant-card">
-        <div class="applicant-head">
-          <div>
-            <div class="applicant-name">${a.applicant_name}</div>
-            <div class="profile-email">${a.applicant_email}</div>
-          </div>
-          <div class="applicant-role-badge">${a.role}</div>
+    list.innerHTML = apps.map(a => `
+      <div style="background:var(--bg); border:3px solid black; border-radius:15px; padding:20px; display:flex; flex-direction:column; gap:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <h3 style="font-family:var(--font-title); font-size:24px;">${a.user_name}</h3>
+          <span style="background:var(--yellow); border:2px solid black; border-radius:99px; padding:4px 12px; font-size:10px; font-weight:900;">${a.role.toUpperCase()}</span>
         </div>
-        <div class="applicant-msg">${a.message || 'No message provided.'}</div>
-        <div class="applicant-actions" id="actions-${a.id}">
-          ${a.status === 'pending' ? `
-            <button class="action-btn accept-btn" onclick="updateAppStatus(${a.id}, 'accepted')">ACCEPT</button>
-            <button class="action-btn reject-btn" onclick="updateAppStatus(${a.id}, 'rejected')">REJECT</button>
-          ` : `
-            <div class="status-badge status-${a.status}">${a.status.toUpperCase()}</div>
-          `}
+        <div style="background:white; border:2px solid black; border-radius:10px; padding:15px; font-size:13px; font-weight:700;">
+          "${a.message || 'No message provided.'}"
         </div>
-      </div>`).join('');
-
-  } catch (err) {
-    list.innerHTML = `<div class="empty-hosted">Error: ${err.message}</div>`;
-  }
+        <div style="display:flex; gap:10px; margin-top:5px;">
+          <button class="btn-host" style="flex:1; background:var(--green); font-size:14px; color:black;" onclick="handleApp(${a.id}, 'accepted', ${tid})">ACCEPT</button>
+          <button class="btn-host" style="flex:1; background:var(--red); font-size:14px; color:white;" onclick="handleApp(${a.id}, 'rejected', ${tid})">REJECT</button>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) { list.innerHTML = 'ERROR LOADING'; }
 }
 
-async function updateAppStatus(appId, status) {
-  const container = document.getElementById(`actions-${appId}`);
-  const oldContent = container.innerHTML;
-  container.innerHTML = '<div class="profile-email">Updating...</div>';
-
-  try {
-    const res = await fetch(`${API}/applications/${appId}/status`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ status })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-
-    container.innerHTML = `<div class="status-badge status-${status}">${status.toUpperCase()}</div>`;
-    showToast(`Application ${status}!`);
-  } catch (err) {
-    container.innerHTML = oldContent;
-    showToast('Error: ' + err.message);
-  }
+async function handleApp(aid, status, tid) {
+  await fetch(`${API}/applications/${aid}/status`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+    body: JSON.stringify({ status })
+  });
+  showAlert(`APPLICATION ${status.toUpperCase()}!`);
+  openApplicants(tid, document.getElementById('m-team-name').textContent);
 }
 
-// ── Init ─────────────────────────────────────────────────
-loadProfile();
+// ── UTILS ──
+
+function showAlert(text) {
+  const container = document.getElementById('alerts');
+  const div = document.createElement('div');
+  div.style.background = 'white'; div.style.border = '4px solid black'; div.style.padding = '15px 25px';
+  div.style.borderRadius = '15px'; div.style.boxShadow = '6px 6px 0px black';
+  div.style.marginBottom = '10px'; div.style.fontWeight = '900';
+  div.textContent = text;
+  container.appendChild(div);
+  setTimeout(() => div.remove(), 4000);
+}
+
+async function uploadAvatar(e) {
+  showAlert("AVATAR UPLOAD COMING SOON ⚡");
+}
+
+function logout() { 
+  localStorage.clear(); 
+  window.location.href = '../Authentication/login.html'; 
+}
