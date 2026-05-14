@@ -47,17 +47,17 @@ router.get("/:id/teams", async (req, res) => {
   }
 });
 
-// ── CREATE HACKATHON (ADMIN ONLY) ─────────────────────
+// ── CREATE HACKATHON (ANY AUTHENTICATED USER) ─────────────────────
 router.post("/", auth, async (req, res) => {
   const { name, description, website_url, start_date, end_date, location, banner_url } = req.body;
 
   if (!name) return res.status(400).json({ error: "Name is required" });
 
   try {
-    // Check if user is admin
-    const userRes = await pool.query("SELECT is_admin FROM users WHERE id = $1", [req.user.id]);
-    if (!userRes.rows[0].is_admin) {
-        return res.status(403).json({ error: "Access denied. Admins only." });
+    // Check if hackathon with same name already exists
+    const existing = await pool.query("SELECT * FROM hackathons WHERE LOWER(name) = LOWER($1)", [name]);
+    if (existing.rows.length > 0) {
+      return res.json(existing.rows[0]); // Return existing one
     }
 
     const result = await pool.query(

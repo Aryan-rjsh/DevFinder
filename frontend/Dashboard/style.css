@@ -353,8 +353,26 @@ body {
 }
 
 /* ── GRID ── */
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(288px, 1fr)); gap: 16px; align-items: stretch; }
-.card { background: var(--white); border: 1.5px solid var(--border); border-radius: var(--radius-lg); padding: 18px; box-shadow: var(--shadow-sm); transition: all 0.22s ease; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; min-height: 350px; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(288px, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+
+.card {
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.22s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  min-height: 350px;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(288px, 1fr));
   gap: 16px;

@@ -314,6 +314,25 @@ async function submitTeam() {
   if (!name || roles.length === 0) return showAlert("NAME & ROLES REQUIRED");
 
   try {
+    // Determine hackathon_id: either from select or create new
+    let hackathon_id = document.getElementById('h-hack').value;
+    const newHackName = document.getElementById('h-hack-new') ? document.getElementById('h-hack-new').value.trim() : '';
+
+    if (!hackathon_id && newHackName) {
+      // Create a new hackathon
+      const hackRes = await fetch(`${API}/hackathons`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ name: newHackName })
+      });
+      if (hackRes.ok) {
+        const hackData = await hackRes.json();
+        hackathon_id = hackData.id;
+      } else {
+        console.warn("Could not create hackathon, proceeding without.");
+      }
+    }
+
     const res = await fetch(`${API}/teams`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -322,15 +341,22 @@ async function submitTeam() {
         tech_stack: document.getElementById('h-tech').value.split(',').map(s => s.trim()),
         roles, 
         deadline: document.getElementById('h-date').value, 
-        hackathon_id: document.getElementById('h-hack').value 
+        hackathon_id: hackathon_id || null 
       })
     });
     if (res.ok) {
       closeModal('modal-host');
       fetchTeams();
+      fetchHackathons();
       showAlert("TEAM PUBLISHED! ✅");
+    } else {
+      const errData = await res.json();
+      showAlert(errData.error || "PUBLISH FAILED");
     }
-  } catch (err) { showAlert("SUBMISSION FAILED"); }
+  } catch (err) { 
+    console.error("Submit team error:", err);
+    showAlert("SUBMISSION FAILED"); 
+  }
 }
 
 async function submitApply() {
