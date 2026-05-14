@@ -13,7 +13,7 @@ const State = {
   activeNav: 'all',
   manageTid: null,
   manageTname: null,
-  hackathons: []   // cached hackathon list for combobox
+  hackathons: []
 };
 
 // ── BOOTSTRAP ──
@@ -98,7 +98,10 @@ function renderCards(teams) {
       </div>
       <div class="card-footer">
         <div class="team-size">${t.team_size || 4}</div>
-        <button class="btn-apply" data-apply-id="${t.id}" data-apply-name="${t.name}" data-apply-roles='${JSON.stringify(t.roles)}'>APPLY</button>
+        ${t.created_by === user.id
+      ? `<button class="btn-apply" style="background:var(--surface2); color:var(--text-3); cursor:default; pointer-events:none; border:1.5px dashed var(--border-med);">YOUR TEAM</button>`
+      : `<button class="btn-apply" data-apply-id="${t.id}" data-apply-name="${t.name}" data-apply-roles='${JSON.stringify(t.roles)}'>APPLY</button>`
+    }
       </div>
       ${State.isAdmin ? `
         <div style="margin-top:15px; display:flex; gap:10px;">
@@ -111,7 +114,6 @@ function renderCards(teams) {
 // ── EVENT LISTENERS ──
 
 function setupEventListeners() {
-  // Sidebar Navigation
   document.querySelectorAll('.nav-item[data-nav]').forEach(item => {
     item.addEventListener('click', () => {
       document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
@@ -120,10 +122,8 @@ function setupEventListeners() {
     });
   });
 
-  // Topbar
   document.getElementById('search-bar').addEventListener('input', fetchTeams);
 
-  // HOST TRIGGER — reset modal state freshly each time
   document.getElementById('host-trigger').addEventListener('click', () => {
     resetHostModal();
     openModal('modal-host');
@@ -132,22 +132,18 @@ function setupEventListeners() {
   document.getElementById('notif-trigger').addEventListener('click', () => toggleNotifs());
   document.getElementById('logout-btn').addEventListener('click', logout);
 
-  // Modal close buttons
   document.querySelectorAll('[data-close]').forEach(btn => {
     btn.addEventListener('click', () => closeModal(btn.dataset.close));
   });
 
-  // Close combobox dropdown when clicking outside
   document.addEventListener('click', e => {
     if (!e.target.closest('#hackathon-combobox')) {
       closeCombobox();
     }
   });
 
-  // Role Field Adder
   document.getElementById('add-role-btn').addEventListener('click', () => addRoleField());
 
-  // Submit Buttons
   document.getElementById('publish-team-btn').addEventListener('click', submitTeam);
   document.getElementById('submit-application-btn').addEventListener('click', submitApply);
   document.getElementById('send-chat-btn').addEventListener('click', sendMessage);
@@ -155,7 +151,6 @@ function setupEventListeners() {
   document.getElementById('save-hack-btn').addEventListener('click', saveHackathon);
   document.getElementById('admin-nav-btn').addEventListener('click', openAdminPanel);
 
-  // Grid click delegation
   document.getElementById('grid').addEventListener('click', e => {
     const hackEditBtn = e.target.closest('.hack-edit-btn');
     if (hackEditBtn) {
@@ -193,7 +188,6 @@ function setupEventListeners() {
     }
   });
 
-  // Enter key for chat
   document.getElementById('chat-input').addEventListener('keypress', e => {
     if (e.key === 'Enter') sendMessage();
   });
@@ -206,14 +200,13 @@ function initCombobox() {
   const dropdown = document.getElementById('h-hack-dropdown');
   const hiddenId = document.getElementById('h-hack-id');
 
-  // Reset
   input.value = '';
   hiddenId.value = '';
   dropdown.innerHTML = '';
   dropdown.classList.remove('open');
 
   input.addEventListener('input', () => {
-    hiddenId.value = ''; // clear any previously selected id when user types
+    hiddenId.value = '';
     filterCombobox(input.value);
   });
 
@@ -251,9 +244,9 @@ function filterCombobox(query) {
 
   dropdown.querySelectorAll('.combobox-option').forEach(opt => {
     opt.addEventListener('mousedown', e => {
-      e.preventDefault(); // prevent input blur before click
+      e.preventDefault();
       document.getElementById('h-hack-input').value = opt.dataset.name;
-      document.getElementById('h-hack-id').value = opt.dataset.id; // empty string = new
+      document.getElementById('h-hack-id').value = opt.dataset.id;
       dropdown.classList.remove('open');
     });
   });
@@ -282,22 +275,15 @@ function addRoleField(prefill = '') {
       <i class="fa-solid fa-minus"></i>
     </button>`;
   document.getElementById('role-inputs').appendChild(div);
-
-  // Focus the new input
   div.querySelector('input').focus();
 }
 
 function resetHostModal() {
-  // Clear all fields
   document.getElementById('h-name').value = '';
   document.getElementById('h-tech').value = '';
   document.getElementById('h-date').value = '';
   document.getElementById('role-inputs').innerHTML = '';
-
-  // Add one empty role field
   addRoleField();
-
-  // Init combobox with fresh state
   initCombobox();
 }
 
@@ -313,18 +299,14 @@ async function submitTeam() {
     ? techRaw.split(',').map(s => s.trim()).filter(Boolean)
     : [];
 
-  // Validate
   if (!name) return showAlert("⚠️ TEAM NAME IS REQUIRED");
   if (roles.length === 0) return showAlert("⚠️ ADD AT LEAST ONE ROLE");
 
-  // Hackathon: id = existing id, name = text in input
   const hackId = document.getElementById('h-hack-id').value.trim();
   const hackName = document.getElementById('h-hack-input').value.trim();
-
   let hackathon_id = hackId || null;
 
   try {
-    // If user typed a new name (no id selected), create the hackathon first
     if (!hackathon_id && hackName) {
       const hackRes = await fetch(`${API}/hackathons`, {
         method: 'POST',
@@ -334,10 +316,7 @@ async function submitTeam() {
       if (hackRes.ok) {
         const hackData = await hackRes.json();
         hackathon_id = hackData.id;
-        // Refresh cache
         await fetchHackathons();
-      } else {
-        console.warn("Could not create hackathon, proceeding without.");
       }
     }
 
