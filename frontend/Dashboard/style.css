@@ -362,7 +362,7 @@ body {
 
 /* ── CARDS ── */
 .card {
-  background: var(--white);
+  background-color: linear-gradient(135deg, #138549, #51a379);
   border: 1.5px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 22px;
@@ -374,17 +374,6 @@ body {
   overflow: hidden;
 }
 
-.card:nth-child(3n+1) {
-  background: var(--white);
-}
-
-.card:nth-child(3n+2) {
-  background: #FDFCFF;
-}
-
-.card:nth-child(3n+3) {
-  background: #FCFDF9;
-}
 
 .card:hover {
   transform: translateY(-4px);
