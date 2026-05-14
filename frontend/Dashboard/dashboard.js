@@ -147,7 +147,7 @@ function setupEventListeners() {
 
   // Global Grid Click Delegation (For dynamic cards)
   document.getElementById('grid').addEventListener('click', e => {
-    const applyBtn = e.target.closest('.btn-apply');
+    const applyBtn = e.target.closest('[data-apply-id]');
     if (applyBtn) {
       const { applyId, applyName, applyRoles } = applyBtn.dataset;
       openApplyModal(applyId, applyName, JSON.parse(applyRoles));
