@@ -110,27 +110,30 @@ body {
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 40px 20px;
+    padding: -20px 0px;
 }
 
 .main-heading {
-    color: #0d1330;
-    font-size: 48px;
+    font-family: cursive;
+    color: #004409;
+    font-size: 42px;
     font-weight: 700;
     margin-bottom: 20px;
     line-height: 1.1;
+    font-style: bold;
 }
 
 .main-description {
     font-family: 'Space Mono', monospace;
-    color: #3a3a3a;
-    font-size: 15px;
+    color: #0c0c0c;
+    font-size: 18px;
     line-height: 1.7;
     max-width: 560px;
+    font-weight: bold;
 }
 
 .get-started-button {
-    margin-top: 14px;
+    margin-top: 4px;
     background: #0d1330;
     color: #f5f0e8;
     border: 2px solid #0d1330;
