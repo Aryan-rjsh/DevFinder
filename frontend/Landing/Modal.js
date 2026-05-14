@@ -69,7 +69,7 @@ function animateAbout() {
 
     document.querySelectorAll('#aboutModal .terminal-line').forEach((line) => {
         const delay = parseInt(line.dataset.delay) || 0;
-        setTimeout(() => line.classList.add('visible'), 800 + delay);
+        setTimeout(() => line.classList.add('visible'), 801 + delay);
     });
 }
 
