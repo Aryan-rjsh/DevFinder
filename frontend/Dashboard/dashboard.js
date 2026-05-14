@@ -97,8 +97,15 @@ function renderCards(teams) {
           <i class="fa-solid ${t.is_featured ? 'fa-star' : 'fa-bolt'}"></i>
         </div>
       </div>
+      <div style="display:flex; flex-wrap:wrap; gap:5px; margin-bottom:10px;">
+        ${(t.tech_stack || []).map(s => `<span class="stack-tag" style="margin:0;"><i class="fa-solid fa-code"></i> ${s.toUpperCase()}</span>`).join('')}
+      </div>
       <div class="roles-wrap">
         ${(t.roles || []).map(r => `<span class="role-chip">${r.toUpperCase()}</span>`).join('')}
+      </div>
+      <div style="font-size:10px; opacity:0.6; margin-bottom:15px; display:flex; flex-direction:column; gap:4px; font-weight:800; text-transform:uppercase;">
+        ${t.hackathon_name ? `<div><i class="fa-solid fa-trophy" style="margin-right:5px; width:12px;"></i> ${t.hackathon_name}</div>` : ''}
+        ${t.deadline ? `<div><i class="fa-regular fa-clock" style="margin-right:5px; width:12px;"></i> BY ${new Date(t.deadline).toLocaleDateString()}</div>` : ''}
       </div>
       <div class="card-footer">
         <div class="team-size">${t.team_size || 4}</div>
@@ -229,7 +236,18 @@ async function handleNav(type) {
     grid.innerHTML = hosted.map(t => `
       <article class="card" style="border-color:var(--pink)">
         <div class="card-header"><div><h3 class="card-title">${t.name}</h3><p class="card-subtitle">HOSTING</p></div></div>
-        <div class="roles-wrap">${(t.roles || []).map(r => `<span class="role-chip">${r}</span>`).join('')}</div>
+        
+        <div style="display:flex; flex-wrap:wrap; gap:5px; margin-bottom:10px;">
+          ${(t.tech_stack || []).map(s => `<span class="stack-tag" style="margin:0;"><i class="fa-solid fa-code"></i> ${s.toUpperCase()}</span>`).join('')}
+        </div>
+        <div class="roles-wrap">
+          ${(t.roles || []).map(r => `<span class="role-chip">${r.toUpperCase()}</span>`).join('')}
+        </div>
+        <div style="font-size:10px; opacity:0.6; margin-bottom:15px; display:flex; flex-direction:column; gap:4px; font-weight:800; text-transform:uppercase;">
+          ${t.hackathon_name ? `<div><i class="fa-solid fa-trophy" style="margin-right:5px; width:12px;"></i> ${t.hackathon_name}</div>` : ''}
+          ${t.deadline ? `<div><i class="fa-regular fa-clock" style="margin-right:5px; width:12px;"></i> BY ${new Date(t.deadline).toLocaleDateString()}</div>` : ''}
+        </div>
+
         <div class="card-footer"><button class="btn-apply btn-manage" data-tid="${t.id}" data-tname="${t.name.replace(/'/g, "&apos;")}" style="background:var(--black); color:white; width:100%">MANAGE TEAM</button></div>
       </article>`).join('');
   }
