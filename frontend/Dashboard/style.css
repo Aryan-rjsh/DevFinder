@@ -88,7 +88,7 @@ body {
 .sidebar {
   width: 240px;
   flex-shrink: 0;
-  background: var(--white);
+  background-color: #1A1B23;
   border-radius: var(--radius-xl);
   padding: 22px 14px;
   display: flex;
@@ -167,7 +167,7 @@ body {
   gap: 10px;
   padding: 11px 14px;
   text-decoration: none;
-  color: var(--text-2);
+  color: white;
   font-family: var(--font-ui);
   font-weight: 600;
   font-size: 13px;
@@ -226,15 +226,15 @@ body {
 
 /* ── TOP BAR ── */
 .top-bar {
-  background: var(--white);
-  border-radius: var(--radius-xl);
+  background-color: #2f303b;
+  border-radius: 25px;
   height: 70px;
   padding: 0 22px;
   display: flex;
   align-items: center;
   gap: 12px;
   box-shadow: var(--shadow-md);
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   flex-shrink: 0;
 }
 
