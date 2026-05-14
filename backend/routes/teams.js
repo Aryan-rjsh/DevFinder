@@ -1,7 +1,7 @@
 const express = require("express");
-const router  = express.Router();
-const pool    = require("../db");
-const auth    = require("../middleware/auth");
+const router = express.Router();
+const pool = require("../db");
+const auth = require("../middleware/auth");
 
 // ── GET RECOMMENDED TEAMS (INTELLIGENT MATCHING) ─────
 router.get("/recommended", auth, async (req, res) => {
@@ -11,7 +11,7 @@ router.get("/recommended", auth, async (req, res) => {
     const skillsArr = skillsStr.split(',').map(s => s.trim()).filter(Boolean);
 
     if (skillsArr.length === 0) {
-      return res.json([]); 
+      return res.json([]);
     }
 
     const query = `
@@ -34,7 +34,7 @@ router.get("/recommended", auth, async (req, res) => {
 
     const patterns = skillsArr.map(s => `%${s}%`);
     const result = await pool.query(query, [patterns, skillsArr, req.user.id]);
-    
+
     res.json(result.rows);
   } catch (err) {
     console.error("Recommendation error:", err.message);
@@ -70,7 +70,6 @@ router.get("/", async (req, res) => {
       query += ` AND EXISTS (SELECT 1 FROM unnest(t.tech_stack) s WHERE s ILIKE $${params.length})`;
     }
 
-    // Featured teams always come first
     query += ` ORDER BY t.is_featured DESC, t.created_at DESC`;
 
     const result = await pool.query(query, params);
@@ -83,10 +82,11 @@ router.get("/", async (req, res) => {
 
 // ── CREATE A TEAM ─────────────────────────────────────
 router.post("/", auth, async (req, res) => {
-  const { name, hosted_by, description, tech_stack, roles, team_size, deadline, hackathon_id } = req.body;
+  const { name, description, tech_stack, roles, team_size, deadline, hackathon_id } = req.body;
 
-  if (!name || !hosted_by || !roles || !roles.length) {
-    return res.status(400).json({ error: "Missing required fields" });
+  // hosted_by is derived from the auth token (req.user.id), not from the request body
+  if (!name || !roles || !roles.length) {
+    return res.status(400).json({ error: "Missing required fields: name and roles are required" });
   }
 
   try {
@@ -94,13 +94,23 @@ router.post("/", auth, async (req, res) => {
       `INSERT INTO teams (name, hosted_by, description, tech_stack, roles, team_size, deadline, created_by, hackathon_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
-      [name, hosted_by, description, tech_stack, roles, team_size || 4, deadline, req.user.id, hackathon_id]
+      [
+        name,
+        req.user.id,          // hosted_by = the logged-in user
+        description || null,
+        tech_stack || [],
+        roles,
+        team_size || 4,
+        deadline || null,
+        req.user.id,          // created_by = same
+        hackathon_id || null
+      ]
     );
 
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error("Create team error:", err.message);
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ error: "Server error", detail: err.message });
   }
 });
 
@@ -108,7 +118,6 @@ router.post("/", auth, async (req, res) => {
 router.delete("/:id", auth, async (req, res) => {
   const { id } = req.params;
   try {
-    // 1. Check if user is owner or admin
     const check = await pool.query("SELECT created_by FROM teams WHERE id = $1", [id]);
     if (check.rows.length === 0) return res.status(404).json({ error: "Team not found" });
 
@@ -119,7 +128,6 @@ router.delete("/:id", auth, async (req, res) => {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
-    // 2. Delete team
     await pool.query("DELETE FROM teams WHERE id = $1", [id]);
     res.json({ message: "Team deleted successfully" });
   } catch (err) {
@@ -145,15 +153,14 @@ router.get("/my-teams", auth, async (req, res) => {
     for (let team of teams) {
       const membersResult = await pool.query(`
         (SELECT u.id, u.name, u.email, 'HOST' as role_in_team
-         FROM users u
-         WHERE u.id = $1)
+         FROM users u WHERE u.id = $1)
         UNION
         (SELECT u.id, u.name, u.email, a.role as role_in_team
          FROM users u
          JOIN applications a ON u.id = a.applicant_id
          WHERE a.team_id = $2 AND a.status = 'accepted')
       `, [team.created_by, team.id]);
-      
+
       team.members = membersResult.rows;
     }
 
