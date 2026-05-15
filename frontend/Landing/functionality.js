@@ -52,8 +52,8 @@ function resetAnimations(overlayId) {
 }
 
 // ── FETCH REAL STATS FROM BACKEND ─────────
-
-const API_BASE = 'http://localhost:5000'; // Change to your deployed backend URL if needed
+// Change this to your deployed backend URL when needed
+const API_BASE = 'https://devfinder-backend-ll4g.onrender.com';
 
 async function fetchStats() {
     try {
@@ -64,8 +64,6 @@ async function fetchStats() {
 
         const usersData = usersRes.ok ? await usersRes.json() : null;
         const teamsData = teamsRes.ok ? await teamsRes.json() : null;
-
-        console.log('Stats fetched:', { users: usersData, teams: teamsData }); // debug log
 
         return {
             users: usersData?.count ?? null,
@@ -78,32 +76,43 @@ async function fetchStats() {
 }
 
 // ── ABOUT ─────────────────────────────────
+// FIX: Animate immediately with fallback values, then re-animate
+// counters with real values when fetch resolves — no blocking wait.
 
-async function animateAbout() {
-    // Fetch stats FIRST, then animate — so counters use real values
-    const stats = await fetchStats();
+function animateAbout() {
+    const cards = document.querySelectorAll('#aboutModal .stat-card');
 
-    document.querySelectorAll('#aboutModal .stat-card').forEach((card) => {
+    // 1. Animate cards into view immediately using data-target as placeholder
+    cards.forEach((card) => {
         const delay = parseInt(card.dataset.delay) || 0;
         setTimeout(() => {
             card.classList.add('visible');
 
             const numEl = card.querySelector('.stat-num');
-            const statKey = card.dataset.stat; // 'users', 'teams', or undefined
-
-            let target;
-
-            if ((statKey === 'users' || statKey === 'teams') && stats[statKey] !== null) {
-                target = stats[statKey];
-            } else {
-                // Fall back to the hard-coded data-target (e.g. 98 for satisfaction)
-                target = parseInt(numEl.dataset.target) || 0;
-            }
-
-            animateCounter(numEl, target);
+            const fallback = parseInt(numEl.dataset.target) || 0;
+            animateCounter(numEl, fallback);
         }, 200 + delay);
     });
 
+    // 2. Fetch real stats in background — when ready, re-run counters for
+    //    users/teams only (satisfaction card stays at its data-target value)
+    fetchStats().then((stats) => {
+        cards.forEach((card) => {
+            const statKey = card.dataset.stat; // 'users' or 'teams'
+            if (!statKey) return;              // skip satisfaction card
+
+            const realValue = stats[statKey];
+            if (realValue === null || isNaN(realValue)) return; // fetch failed
+
+            const numEl = card.querySelector('.stat-num');
+            // Only re-animate if the value actually differs from the fallback
+            if (parseInt(numEl.textContent.replace(/,/g, '')) !== realValue) {
+                animateCounter(numEl, realValue);
+            }
+        });
+    });
+
+    // 3. Feature blocks and terminal animate independently (no fetch dependency)
     document.querySelectorAll('#aboutModal .feature-block').forEach((block) => {
         const delay = parseInt(block.dataset.delay) || 0;
         setTimeout(() => block.classList.add('visible'), 550 + delay);
@@ -118,10 +127,14 @@ async function animateAbout() {
 // ── COUNTER ───────────────────────────────
 
 function animateCounter(el, target) {
-    if (!target || isNaN(target)) {
+    if (target === null || target === undefined || isNaN(target)) {
         el.textContent = '0';
         return;
     }
+
+    // Cancel any in-progress animation on this element
+    if (el._animFrame) cancelAnimationFrame(el._animFrame);
+
     const duration = 1300;
     const start = performance.now();
 
@@ -129,10 +142,16 @@ function animateCounter(el, target) {
         const progress = Math.min((now - start) / duration, 1);
         const eased = 1 - Math.pow(1 - progress, 3);
         el.textContent = Math.floor(eased * target).toLocaleString();
-        if (progress < 1) requestAnimationFrame(tick);
-        else el.textContent = target.toLocaleString();
+
+        if (progress < 1) {
+            el._animFrame = requestAnimationFrame(tick);
+        } else {
+            el.textContent = target.toLocaleString();
+            el._animFrame = null;
+        }
     }
-    requestAnimationFrame(tick);
+
+    el._animFrame = requestAnimationFrame(tick);
 }
 
 // ── CONTACT ───────────────────────────────
