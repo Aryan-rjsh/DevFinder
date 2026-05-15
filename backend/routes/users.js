@@ -1,7 +1,7 @@
 const express = require("express");
-const router  = express.Router();
-const pool    = require("../db");
-const auth    = require("../middleware/auth");
+const router = express.Router();
+const pool = require("../db");
+const auth = require("../middleware/auth");
 
 // ── GET CURRENT USER (ME) ─────────────────────────────
 router.get("/me", auth, async (req, res) => {
@@ -53,6 +53,16 @@ router.put("/profile", auth, async (req, res) => {
     res.json(result.rows[0]);
   } catch (err) {
     console.error("Update profile error:", err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ── PUBLIC: GET USER COUNT ─────────────────────────────
+router.get("/count", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT COUNT(*) FROM users");
+    res.json({ count: parseInt(result.rows[0].count) });
+  } catch (err) {
     res.status(500).json({ error: "Server error" });
   }
 });

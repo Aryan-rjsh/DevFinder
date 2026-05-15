@@ -171,4 +171,14 @@ router.get("/my-teams", auth, async (req, res) => {
   }
 });
 
+// ── PUBLIC: GET TEAM COUNT ─────────────────────────────
+router.get("/count", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT COUNT(*) FROM teams");
+    res.json({ count: parseInt(result.rows[0].count) });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 module.exports = router;
