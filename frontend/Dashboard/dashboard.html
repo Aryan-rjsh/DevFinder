@@ -1,143 +1,248 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DevFinder — Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&family=UnifrakturMaguntia&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevFinder — Premium Center</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jacquarda+Bastarda+9:wght@400&display=swap" />
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 </head>
+
 <body>
 
-<aside class="sidebar" id="sidebar">
-  <div class="sidebar-top">
-    <div class="user-avatar"><i class="fa-solid fa-user"></i></div>
-    <div>
-      <div class="user-name" id="sidebar-name">LOADING...</div>
-      <div class="user-role">Member</div>
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="user-profile">
+      <div class="avatar" id="u-avatar"><i class="fa-solid fa-bolt"></i></div>
+      <div class="user-info">
+        <h2 id="u-name">SREERAG</h2>
+        <p id="u-role">MEMBER</p>
+      </div>
     </div>
-  </div>
 
-  <div class="nav-section">
-    <div class="nav-item active" onclick="setActive(this)">
-      <i class="fa-solid fa-house"></i> Dashboard
+    <nav class="nav-list">
+      <div class="nav-item active" data-nav="all">
+        <i class="fa-solid fa-house"></i> <span>Dashboard</span>
+      </div>
+      <div class="nav-item" data-nav="recommended">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> <span>Recommended</span>
+      </div>
+      <div class="nav-item" data-nav="joined">
+        <i class="fa-solid fa-users"></i> <span>My Teams</span>
+      </div>
+      <div class="nav-item" data-nav="hosted">
+        <i class="fa-solid fa-list-check"></i> <span>My Hosted</span>
+      </div>
+      <div class="nav-item" data-nav="hackathons">
+        <i class="fa-solid fa-trophy"></i> <span>Hackathons</span>
+      </div>
+      <div class="nav-item admin-only" id="admin-nav-btn" style="display:none; color:var(--pink)">
+        <i class="fa-solid fa-shield-halved"></i> <span>Admin Panel</span>
+      </div>
+    </nav>
+
+    <div style="margin-top:20px">
+      <a class="nav-item" href="profile.html">
+        <i class="fa-solid fa-id-card"></i> <span>Profile</span>
+      </a>
+      <div class="nav-item danger" id="logout-btn">
+        <i class="fa-solid fa-power-off"></i> <span>Log Out</span>
+      </div>
     </div>
-    <div class="nav-item" onclick="setActive(this)">
-      <i class="fa-solid fa-users"></i> My Teams
-    </div>
-    <div class="nav-item" onclick="setActive(this)">
-      <i class="fa-solid fa-list-check"></i> My Hosted
-    </div>
-  </div>
 
-  <div class="nav-divider"></div>
-
-  <div class="nav-section" style="padding-top:0">
-    <a class="nav-item" href="profile.html">
-      <i class="fa-solid fa-circle-user"></i> Profile
-    </a>
-    <div class="nav-item" onclick="setActive(this)">
-      <i class="fa-solid fa-gear"></i> Settings
-    </div>
-  </div>
-
-  <div class="nav-divider"></div>
-
-  <div class="nav-section" style="padding-top:0">
-    <div class="nav-item danger" onclick="logout()">
-      <i class="fa-solid fa-right-from-bracket"></i> Log Out
-    </div>
-  </div>
-
-  <div class="sidebar-bottom">
     <div class="sidebar-logo">DevFinder</div>
-    <div class="sidebar-since">Since 2026</div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-area">
+    <header class="top-bar">
+      <div style="flex:1; position:relative;">
+        <input type="text" class="search-input" placeholder="Find teams, roles, stack..." id="search-bar">
+      </div>
+
+      <button class="btn-host" id="host-trigger">
+        <i class="fa-solid fa-plus"></i> HOST TEAM
+      </button>
+
+      <button class="btn-icon" id="notif-trigger">
+        <i class="fa-solid fa-bell"></i>
+        <div id="notif-count"
+          style="display:none; position:absolute; top:-5px; right:-5px; background:var(--red); color:white; width:22px; height:22px; border-radius:50%; border:3px solid black; font-size:10px; font-weight:900; align-items:center; justify-content:center;">
+          0</div>
+      </button>
+    </header>
+
+    <section class="scroll-area">
+      <h1 class="hero-title">H<span>O</span>STSPACE</h1>
+      <div class="grid" id="grid"></div>
+    </section>
+  </main>
+
+  <!-- HOST MODAL -->
+  <div class="modal-bg" id="modal-host">
+    <div class="modal-content">
+      <h1 style="font-family:var(--font-title); font-size:42px; border-bottom:3px solid black; margin-bottom:25px;">NEW
+        TEAM</h1>
+      <button class="modal-close" data-close="modal-host"><i class="fa-solid fa-x"></i></button>
+
+      <div class="field"><label>Team Name</label><input type="text" id="h-name" placeholder="e.g. Dream Team"></div>
+      <div class="field"><label>Tech Stack</label><input type="text" id="h-tech" placeholder="React, Node, etc."></div>
+
+      <div class="field">
+        <label>Roles Needed</label>
+        <div id="role-inputs"></div>
+        <button class="btn-host"
+          style="width:100%; background:none; color:black; border:2px dashed black; font-size:16px; box-shadow:none; margin-top:6px;"
+          id="add-role-btn">+ ADD ROLE</button>
+      </div>
+
+      <!-- SINGLE HACKATHON COMBOBOX -->
+      <div class="field">
+        <label>Hackathon</label>
+        <div class="combobox-wrap" id="hackathon-combobox">
+          <input type="text" id="h-hack-input" placeholder="Type or select a hackathon..." autocomplete="off" />
+          <div class="combobox-dropdown" id="h-hack-dropdown"></div>
+        </div>
+        <!-- Hidden field stores the selected existing hackathon id, if any -->
+        <input type="hidden" id="h-hack-id">
+      </div>
+
+      <div class="field"><label>Deadline</label><input type="date" id="h-date"></div>
+
+      <button class="btn-host"
+        style="width:100%; margin-top:15px; text-align:center; display:flex; align-items:center; justify-content:center;"
+        type="button" id="publish-team-btn">PUBLISH SQUAD</button>
+    </div>
   </div>
-</aside>
 
-<button class="collapse-btn" id="collapse-btn" onclick="toggleSidebar()">
-  <i class="fa-solid fa-chevron-left" id="collapse-icon"></i>
-</button>
-
-<div class="main" id="main">
-  <div class="bg-wrap">
-    <div class="bg-yellow"></div>
-    <div class="bg-pink"></div>
-    <div class="bg-green"></div>
+  <!-- APPLY MODAL -->
+  <div class="modal-bg" id="modal-apply">
+    <div class="modal-content">
+      <h1 style="font-family:var(--font-title); font-size:42px; border-bottom:3px solid black; margin-bottom:25px;"
+        id="apply-title">APPLY</h1>
+      <button class="modal-close" data-close="modal-apply"><i class="fa-solid fa-x"></i></button>
+      <div class="field"><label>Select Role</label><select id="a-role"></select></div>
+      <div class="field"><label>Your Pitch</label><textarea id="a-msg" style="height:120px;"></textarea></div>
+      <button class="btn-host" style="width:100%; background:var(--green); color:black;"
+        id="submit-application-btn">SEND APPLICATION</button>
+    </div>
   </div>
 
-  <div class="topbar">
-    <div class="search-wrap">
-      <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" placeholder="Search Teams, Events, User" id="search-input">
+  <!-- CHAT MODAL -->
+  <div class="modal-bg" id="modal-chat">
+    <div class="modal-content chat-window" style="width:600px;">
+      <div class="chat-header">
+        <div>
+          <h2 style="font-family:var(--font-title); font-size:32px; line-height:1;" id="chat-title">TEAM CHAT</h2>
+          <p style="font-size:9px; font-weight:900; opacity:0.6;">SQUAD CHANNEL</p>
+        </div>
+        <button class="modal-close" data-close="modal-chat" style="position:static;"><i
+            class="fa-solid fa-x"></i></button>
+      </div>
+      <div class="chat-msgs" id="chat-msgs"></div>
+      <div style="padding:20px; background:white; border-top:var(--border); display:flex; gap:12px;">
+        <input type="text" id="chat-input" placeholder="Message..."
+          style="flex:1; border:3px solid black; border-radius:99px; padding:12px 20px; font-weight:700;">
+        <button id="send-chat-btn"
+          style="width:50px; height:50px; border-radius:50%; background:var(--black); color:white; border:none; cursor:pointer;"><i
+            class="fa-solid fa-paper-plane"></i></button>
+      </div>
     </div>
-    <button class="host-btn" onclick="openModal()">
-      <i class="fa-solid fa-plus"></i> HOST TEAM
-    </button>
-    <button class="icon-btn" onclick="window.location.href='profile.html'">
-      <i class="fa-solid fa-user"></i>
-    </button>
-    <button class="icon-btn"><i class="fa-solid fa-bell"></i></button>
-    <button class="icon-btn"><i class="fa-solid fa-gear"></i></button>
   </div>
 
-  <div class="content">
-    <div class="hostspace-title">H<span class="o">O</span>STSPACE</div>
-    <div class="cards-row" id="cards-row"></div>
-  </div>
-</div>
-
-<!-- HOST MODAL -->
-<div class="modal-overlay" id="modal">
-  <div class="modal">
-    <div class="modal-title">HOST A TEAM</div>
-    <button class="modal-close" onclick="closeModal()">
-      <i class="fa-solid fa-xmark"></i>
-    </button>
-
-    <div class="field">
-      <label>Team / Hackathon Name</label>
-      <input type="text" id="f-name" placeholder="e.g. GreenHack 2026">
-    </div>
-    <div class="field">
-      <label>Hosted By</label>
-      <input type="text" id="f-by" placeholder="Organisation or your name">
-    </div>
-    <div class="field">
-      <label>Description</label>
-      <textarea id="f-desc" placeholder="What are you building?"></textarea>
-    </div>
-    <div class="field">
-      <label>Tech Stack</label>
-      <input type="text" id="f-tech" placeholder="e.g. React, Node.js, PostgreSQL">
-    </div>
-    <div class="field">
-      <label>Team Size</label>
-      <input type="number" id="f-size" min="2" max="10" value="4">
-    </div>
-    <div class="field">
-      <label>Deadline</label>
-      <input type="date" id="f-deadline">
-    </div>
-    <div class="field">
-      <label>Roles Needed</label>
-      <div class="roles-builder" id="roles-builder">
-        <div class="role-input-row">
-          <input type="text" placeholder="e.g. UI/UX Designer">
-          <button onclick="removeRole(this)"><i class="fa-solid fa-minus"></i></button>
+  <!-- ADMIN MODAL -->
+  <div class="modal-bg" id="modal-admin">
+    <div class="modal-content" style="width:650px;">
+      <h1 style="font-family:var(--font-title); font-size:42px; border-bottom:3px solid black; margin-bottom:25px;">
+        ADMIN CONTROL</h1>
+      <button class="modal-close" data-close="modal-admin"><i class="fa-solid fa-x"></i></button>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+        <div style="background:var(--bg); padding:20px; border:3px solid black; border-radius:20px;">
+          <h3 style="font-family:var(--font-title); font-size:24px;">STATS</h3>
+          <div style="font-weight:900; line-height:1.8;">
+            USERS: <span id="stat-u" style="color:var(--red)">0</span><br>
+            TEAMS: <span id="stat-t" style="color:var(--green)">0</span><br>
+            APPS: <span id="stat-a" style="color:var(--cyan)">0</span>
+          </div>
+        </div>
+        <div style="background:var(--yellow); padding:20px; border:3px solid black; border-radius:20px;">
+          <h3 style="font-family:var(--font-title); font-size:24px;">BROADCAST</h3>
+          <textarea id="admin-bc" placeholder="Message to all..."
+            style="width:100%; height:80px; margin:10px 0;"></textarea>
+          <button class="btn-host" style="width:100%;" id="broadcast-btn">SEND ALL</button>
         </div>
       </div>
-      <button class="add-role-btn" onclick="addRole()">
-        <i class="fa-solid fa-plus"></i> Add Role
-      </button>
     </div>
-
-    <div id="modal-error"></div>
-    <button class="submit-btn" onclick="submitHost()">CREATE TEAM</button>
   </div>
-</div>
 
-<script src="dashboard.js"></script>
+  <!-- EDIT HACKATHON MODAL -->
+  <div class="modal-bg" id="modal-edit-hack">
+    <div class="modal-content" style="width:500px;">
+      <h1 style="font-family:var(--font-title); font-size:42px; border-bottom:3px solid black; margin-bottom:25px;">EDIT
+        HACKATHON</h1>
+      <button class="modal-close" data-close="modal-edit-hack"><i class="fa-solid fa-x"></i></button>
+      <input type="hidden" id="e-hack-id">
+      <div class="field"><label>Hackathon Name</label><input type="text" id="e-hack-name"></div>
+      <div class="field"><label>Location</label><input type="text" id="e-hack-loc"></div>
+      <div class="field"><label>Website URL</label><input type="text" id="e-hack-url"></div>
+      <button class="btn-host" style="width:100%; margin-top:15px; background:var(--yellow); color:black;"
+        id="save-hack-btn">SAVE CHANGES</button>
+    </div>
+  </div>
+
+  <!-- MANAGE TEAM MODAL -->
+  <div class="modal-bg" id="modal-manage">
+    <div class="modal-content" style="width:750px; max-height:85vh; display:flex; flex-direction:column;">
+      <h1 style="font-family:var(--font-title); font-size:42px; border-bottom:3px solid black; margin-bottom:20px;"
+        id="manage-title">MANAGE TEAM</h1>
+      <button class="modal-close" data-close="modal-manage"><i class="fa-solid fa-x"></i></button>
+      <div style="display:flex; gap:20px; flex:1; overflow:hidden; min-height:400px;">
+        <div style="flex:1; display:flex; flex-direction:column; gap:10px;">
+          <h3 style="font-family:var(--font-title); font-size:24px; color:var(--yellow-dark);">PENDING</h3>
+          <div id="manage-pending-list"
+            style="flex:1; overflow-y:auto; padding-right:5px; display:flex; flex-direction:column; gap:10px;"></div>
+        </div>
+        <div
+          style="flex:1; display:flex; flex-direction:column; gap:10px; padding-left:20px; border-left:2px dashed var(--border-med);">
+          <h3 style="font-family:var(--font-title); font-size:24px; color:var(--green-dark);">MEMBERS</h3>
+          <div id="manage-members-list"
+            style="flex:1; overflow-y:auto; padding-right:5px; display:flex; flex-direction:column; gap:10px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICATION PANEL -->
+  <div id="notif-panel" style="
+  display:none;
+  position:fixed;
+  top:90px;
+  right:20px;
+  width:340px;
+  background:white;
+  border:1.5px solid var(--border-med);
+  border-radius:20px;
+  box-shadow:0 16px 48px rgba(0,0,0,0.14);
+  z-index:2500;
+  overflow:hidden;
+  animation:modalIn 0.2s ease;
+">
+    <div
+      style="padding:16px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+      <span style="font-family:var(--font-ui); font-weight:800; font-size:14px;">NOTIFICATIONS</span>
+      <button onclick="markAllRead()"
+        style="font-size:11px; font-weight:700; font-family:var(--font-ui); background:var(--green-bg); color:var(--green-dark); border:none; border-radius:99px; padding:4px 12px; cursor:pointer;">MARK
+        ALL READ</button>
+    </div>
+    <div id="notif-list" style="max-height:380px; overflow-y:auto;"></div>
+  </div>
+
+  <div id="alerts" style="position:fixed; top:20px; right:20px; z-index:3000;"></div>
+
+  <script src="dashboard.js"></script>
 </body>
+
 </html>

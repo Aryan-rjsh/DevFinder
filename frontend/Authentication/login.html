@@ -2,17 +2,10 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
-
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DevFinder — Login</title>
-
-    <link rel="stylesheet"
-          href="style.css">
-
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
@@ -20,75 +13,51 @@
     <div class="main-container">
 
         <!-- LEFT SIDE -->
-
         <div class="left-section">
-
-            <img src="hackathon-bg.png"
-                 alt="Hackathon Illustration">
-
+            <img src="hackathon-bg.png" alt="Hackathon Illustration">
         </div>
 
         <!-- RIGHT SIDE -->
-
         <div class="right-section">
-
             <div class="login-card">
 
                 <h1>Welcome<br>Back</h1>
-
                 <p>Login to continue your journey</p>
 
                 <form id="login-form">
 
                     <div class="input-box">
-                        <input
-                            type="email"
-                            id="login-email"
-                            placeholder="Email Address"
-                            autocomplete="email"
-                            required>
+                        <input type="email" id="login-email" placeholder="Email Address" autocomplete="email" required>
                     </div>
 
                     <div class="input-box password-box">
-                        <input
-                            type="password"
-                            id="login-password"
-                            placeholder="Password"
-                            autocomplete="current-password"
-                            required>
+                        <input type="password" id="login-password" placeholder="Password"
+                            autocomplete="current-password" required>
                         <span class="toggle-password" onclick="togglePassword('login-password', this)">👁</span>
                     </div>
 
-                    <!-- Error message from backend -->
                     <p class="error-msg" id="error-msg"></p>
 
-                    <button
-                        class="login-btn"
-                        type="submit"
-                        id="login-btn">
-                        Login
-                    </button>
+                    <button class="login-btn" type="submit" id="login-btn">Login</button>
 
                 </form>
 
                 <div class="divider">OR</div>
 
                 <div class="social-icons">
-                    <button class="social-btn google">
+                    <button class="social-btn google" type="button" onclick="socialComingSoon()">
                         <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" width="20"> Google
                     </button>
-                    <button class="social-btn github">
+                    <button class="social-btn github" type="button" onclick="socialComingSoon()">
                         <img src="https://www.svgrepo.com/show/512317/github-142.svg" alt="GitHub" width="20"> GitHub
                     </button>
                 </div>
 
                 <div class="signup-text">
-                    Don't have an account?
-                    <a href="signup.html">Create Account</a>
+                    Don't have an account? <a href="signup.html">Create Account</a>
                 </div>
 
             </div>
-
         </div>
 
     </div>

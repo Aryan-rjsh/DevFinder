@@ -1,459 +1,673 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DevFinder — Profile</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&family=UnifrakturMaguntia&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<link rel="stylesheet" href="style.css">
-<style>
-/* ── PROFILE SPECIFIC ── */
-.profile-wrap{
-  display:grid;
-  grid-template-columns:320px 1fr;
-  gap:20px;
-  padding:28px;
-  position:relative;z-index:2;
-  height:100%;overflow-y:auto;
-}
-.profile-wrap::-webkit-scrollbar{width:4px}
-.profile-wrap::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.2);border-radius:2px}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevFinder — My Profile</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jacquarda+Bastarda+9:wght@400&display=swap" />
+  <style>
+    /* ── PROFILE-SPECIFIC LAYOUT ── */
+    .profile-grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 20px;
+      height: 100%;
+      align-items: start;
+    }
 
-/* LEFT CARD */
-.profile-left{display:flex;flex-direction:column;gap:16px}
+    .profile-left {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+    }
 
-.avatar-card{
-  background:var(--white);
-  border:var(--border);border-radius:20px;
-  box-shadow:5px 5px 0 var(--black);
-  padding:28px 24px;
-  display:flex;flex-direction:column;align-items:center;gap:14px;
-  text-align:center;
-}
-.avatar-wrap{position:relative;width:100px;height:100px}
-.big-avatar{
-  width:100px;height:100px;border-radius:50%;
-  border:var(--border);
-  background:var(--yellow);
-  display:flex;align-items:center;justify-content:center;
-  font-family:'Bebas Neue',sans-serif;font-size:42px;
-  color:var(--black);overflow:hidden;
-  box-shadow:4px 4px 0 var(--black);
-}
-.big-avatar img{width:100%;height:100%;object-fit:cover}
-.avatar-upload-btn{
-  position:absolute;bottom:0;right:0;
-  width:28px;height:28px;border-radius:50%;
-  background:var(--pink);border:2px solid var(--black);
-  cursor:pointer;display:flex;align-items:center;justify-content:center;
-  color:var(--white);font-size:11px;
-  box-shadow:2px 2px 0 var(--black);
-}
-#avatar-input{display:none}
+    .profile-right {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
 
-.profile-name{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:28px;letter-spacing:.5px;color:var(--black);line-height:1;
-}
-.profile-email{font-size:12px;color:#888;font-weight:500}
-.profile-since{
-  font-size:10px;font-weight:700;letter-spacing:1.5px;
-  text-transform:uppercase;color:#aaa;
-}
+    /* ── AVATAR ISLAND ── */
+    .avatar-island {
+      background: var(--white);
+      border: 1.5px solid var(--border-med);
+      border-radius: var(--radius-xl);
+      padding: 32px 24px;
+      text-align: center;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+    }
 
-.edit-btn{
-  width:100%;padding:11px;
-  background:var(--black);color:var(--white);
-  border:var(--border);border-radius:100px;
-  font-family:'Space Grotesk',sans-serif;
-  font-size:11px;font-weight:700;letter-spacing:2px;
-  cursor:pointer;transition:all .2s;
-  box-shadow:3px 3px 0 #333;
-  display:flex;align-items:center;justify-content:center;gap:8px;
-}
-.edit-btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 #333}
-.edit-btn.active{background:var(--green);color:var(--black);box-shadow:3px 3px 0 var(--black)}
+    .big-avatar-wrap {
+      position: relative;
+      width: 120px;
+      height: 120px;
+    }
 
-/* LINKS CARD */
-.links-card{
-  background:var(--white);
-  border:var(--border);border-radius:20px;
-  box-shadow:5px 5px 0 var(--black);
-  padding:20px;
-}
-.links-title{
-  font-size:9px;font-weight:800;letter-spacing:2.5px;
-  text-transform:uppercase;color:#aaa;margin-bottom:14px;
-}
-.link-row{
-  display:flex;align-items:center;gap:10px;
-  padding:10px 0;border-bottom:1.5px solid #f0f0f0;
-}
-.link-row:last-child{border-bottom:none}
-.link-icon{
-  width:34px;height:34px;border-radius:8px;
-  border:2px solid var(--black);
-  display:flex;align-items:center;justify-content:center;
-  font-size:14px;color:var(--black);flex-shrink:0;
-}
-.link-info{flex:1;overflow:hidden}
-.link-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#aaa}
-.link-val{
-  font-size:12px;font-weight:600;color:var(--black);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  text-decoration:none;
-}
-.link-val:hover{color:var(--green2)}
-.link-val.empty{color:#ccc;font-weight:400}
+    .big-avatar {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 3px solid var(--border-med);
+      background: linear-gradient(135deg, var(--green) 0%, var(--purple) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-title);
+      font-size: 52px;
+      color: var(--text);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
 
-/* RIGHT SIDE */
-.profile-right{display:flex;flex-direction:column;gap:16px}
+    .big-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
 
-.info-card{
-  background:var(--white);
-  border:var(--border);border-radius:20px;
-  box-shadow:5px 5px 0 var(--black);
-  padding:24px;
-}
-.card-head{
-  display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:18px;
-}
-.card-label{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:22px;letter-spacing:.5px;color:var(--black);
-}
+    .cam-btn {
+      position: absolute;
+      bottom: 4px;
+      right: 4px;
+      width: 38px;
+      height: 38px;
+      background: var(--text);
+      border: 2px solid white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.18s ease;
+      box-shadow: var(--shadow-sm);
+    }
 
-/* VIEW MODE */
-.view-row{margin-bottom:14px}
-.view-row:last-child{margin-bottom:0}
-.vr-label{font-size:9px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#aaa;margin-bottom:4px}
-.vr-val{font-size:14px;font-weight:500;color:var(--black);line-height:1.6}
-.vr-val.empty{color:#ccc;font-style:italic;font-weight:400}
+    .cam-btn:hover {
+      background: var(--green-dark);
+      transform: scale(1.08);
+    }
 
-/* EDIT MODE */
-.edit-mode{display:none}
-.edit-mode.show{display:block}
-.view-mode.hide{display:none}
+    .avatar-name {
+      font-family: var(--font-title);
+      font-size: 36px;
+      line-height: 1;
+      color: var(--text);
+      letter-spacing: 1px;
+    }
 
-.efield{margin-bottom:14px}
-.efield label{display:block;font-size:9px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--black);margin-bottom:6px}
-.efield input,.efield textarea{
-  width:100%;padding:11px 14px;
-  border:var(--border);border-radius:12px;
-  font-family:'Space Grotesk',sans-serif;font-size:13px;
-  color:var(--dark);background:var(--white);outline:none;
-  transition:box-shadow .2s;
-}
-.efield input:focus,.efield textarea:focus{box-shadow:3px 3px 0 var(--black)}
-.efield textarea{resize:vertical;min-height:80px}
+    .avatar-email {
+      font-family: var(--font-ui);
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--text-3);
+      margin-top: -10px;
+    }
 
-/* SKILLS CHIPS */
-.skills-wrap{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
-.skill-chip{
-  display:flex;align-items:center;gap:6px;
-  background:var(--yellow);border:2px solid var(--black);
-  border-radius:100px;padding:5px 12px;
-  font-size:11px;font-weight:700;letter-spacing:.5px;
-  box-shadow:2px 2px 0 var(--black);
-}
-.skill-chip button{
-  background:none;border:none;cursor:pointer;
-  color:var(--black);font-size:10px;padding:0;
-  display:flex;align-items:center;
-}
-.skill-chip.view-chip button{display:none}
-.skill-input-wrap{display:flex;gap:8px}
-.skill-input-wrap input{
-  flex:1;padding:10px 14px;
-  border:var(--border);border-radius:100px;
-  font-family:'Space Grotesk',sans-serif;font-size:12px;
-  color:var(--dark);outline:none;
-}
-.skill-add-btn{
-  padding:10px 16px;
-  background:var(--black);color:var(--white);
-  border:var(--border);border-radius:100px;
-  font-size:12px;font-weight:700;cursor:pointer;
-  display:flex;align-items:center;gap:6px;
-  box-shadow:2px 2px 0 #333;
-}
+    .avatar-since {
+      font-family: var(--font-ui);
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-3);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
 
-/* SAVE ROW */
-.save-row{display:flex;gap:10px;margin-top:4px}
-.save-btn{
-  flex:1;padding:12px;
-  background:var(--green);color:var(--black);
-  border:var(--border);border-radius:100px;
-  font-family:'Space Grotesk',sans-serif;
-  font-size:12px;font-weight:800;letter-spacing:1.5px;
-  cursor:pointer;box-shadow:3px 3px 0 var(--black);
-  transition:all .2s;
-}
-.save-btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--black)}
-.cancel-btn{
-  padding:12px 20px;
-  background:var(--white);color:var(--black);
-  border:var(--border);border-radius:100px;
-  font-family:'Space Grotesk',sans-serif;
-  font-size:12px;font-weight:700;letter-spacing:1px;
-  cursor:pointer;
-}
+    .social-row {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+    }
 
-/* HOSTED TEAMS */
-.hosted-grid{display:flex;flex-direction:column;gap:12px}
-.hosted-card{
-  display:flex;align-items:center;gap:14px;
-  background:var(--white);border:var(--border);
-  border-radius:14px;padding:14px 16px;
-  box-shadow:3px 3px 0 var(--black);
-  transition:transform .15s,box-shadow .15s;
-}
-.hosted-card:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--black)}
-.hosted-icon{
-  width:44px;height:44px;border-radius:10px;
-  background:var(--yellow);border:2px solid var(--black);
-  display:flex;align-items:center;justify-content:center;
-  font-size:16px;color:var(--black);flex-shrink:0;
-}
-.hosted-info{flex:1}
-.hosted-name{font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--black);letter-spacing:.3px}
-.hosted-meta{font-size:10px;color:#888;font-weight:600;margin-top:2px}
-.hosted-badge{
-  background:var(--green);border:2px solid var(--black);
-  border-radius:100px;padding:4px 10px;
-  font-size:9px;font-weight:800;letter-spacing:1px;
-  color:var(--black);
-}
-.empty-hosted{
-  text-align:center;padding:32px;
-  color:#bbb;font-size:13px;font-weight:500;
-}
-.empty-hosted i{font-size:32px;display:block;margin-bottom:10px;color:#ddd}
+    .social-btn {
+      flex: 1;
+      height: 40px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--border-med);
+      background: var(--surface2);
+      color: var(--text-2);
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      transition: all 0.18s ease;
+      cursor: pointer;
+    }
 
-/* SUCCESS TOAST */
-.toast{
-  position:fixed;bottom:28px;right:28px;
-  background:var(--black);color:var(--white);
-  border:var(--border);border-radius:14px;
-  padding:14px 20px;font-size:13px;font-weight:600;
-  box-shadow:4px 4px 0 #333;z-index:999;
-  display:flex;align-items:center;gap:10px;
-  transform:translateY(80px);opacity:0;
-  transition:all .3s ease;
-}
-.toast.show{transform:translateY(0);opacity:1}
-.toast i{color:var(--green);font-size:16px}
-</style>
+    .social-btn:hover {
+      background: var(--text);
+      color: white;
+      border-color: var(--text);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ── LINKS ISLAND ── */
+    .links-island {
+      background: var(--white);
+      border: 1.5px solid var(--border-med);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .island-title {
+      font-family: var(--font-title);
+      font-size: 22px;
+      color: var(--text);
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      letter-spacing: 0.5px;
+    }
+
+    .link-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .link-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .link-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: var(--surface2);
+      border: 1.5px solid var(--border-med);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: var(--text-2);
+      flex-shrink: 0;
+    }
+
+    .link-text {
+      font-family: var(--font-ui);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-2);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+
+    .link-text.filled {
+      color: var(--text);
+    }
+
+    /* ── ABOUT ISLAND ── */
+    .about-island {
+      background: var(--white);
+      border: 1.5px solid var(--border-med);
+      border-radius: var(--radius-xl);
+      padding: 28px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .about-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+      gap: 12px;
+    }
+
+    .section-hero {
+      font-family: var(--font-title);
+      font-size: 52px;
+      line-height: 0.9;
+      color: var(--text);
+      letter-spacing: 1px;
+    }
+
+    .section-hero span {
+      color: transparent;
+      -webkit-text-stroke: 2px var(--green-dark);
+    }
+
+    .bio-text {
+      font-family: var(--font-ui);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-2);
+      line-height: 1.7;
+      background: var(--surface2);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      border: 1px solid var(--border);
+    }
+
+    .skills-section {
+      margin-top: 20px;
+    }
+
+    .skills-label {
+      font-family: var(--font-ui);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .skills-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .skill-chip {
+      background: var(--green-bg);
+      color: var(--green-dark);
+      border: 1px solid rgba(61, 143, 47, 0.2);
+      border-radius: 99px;
+      padding: 6px 14px;
+      font-family: var(--font-ui);
+      font-size: 12px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.15s ease;
+    }
+
+    .skill-chip:nth-child(3n+2) {
+      background: var(--purple-bg);
+      color: var(--purple-dark);
+      border-color: rgba(91, 33, 182, 0.2);
+    }
+
+    .skill-chip:nth-child(3n+3) {
+      background: var(--blue-bg);
+      color: var(--blue-dark);
+      border-color: rgba(12, 74, 110, 0.2);
+    }
+
+    .skill-chip button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 900;
+      color: inherit;
+      opacity: 0.6;
+      padding: 0;
+      display: flex;
+      align-items: center;
+    }
+
+    .skill-chip button:hover {
+      opacity: 1;
+    }
+
+    /* ── HOSTED TEAMS ISLAND ── */
+    .hosted-island {
+      background: var(--white);
+      border: 1.5px solid var(--border-med);
+      border-radius: var(--radius-xl);
+      padding: 28px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .hosted-team-card {
+      background: var(--text);
+      border-radius: var(--radius-lg);
+      padding: 20px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      transition: all 0.2s ease;
+      gap: 16px;
+    }
+
+    .hosted-team-card:last-child {
+      margin-bottom: 0;
+    }
+
+    .hosted-team-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .hosted-team-name {
+      font-family: var(--font-title);
+      font-size: 24px;
+      color: var(--yellow);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .hosted-team-meta {
+      font-family: var(--font-ui);
+      font-size: 10px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.4);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .hosted-team-roles {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 8px;
+    }
+
+    .hosted-role-chip {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 99px;
+      padding: 3px 10px;
+      font-family: var(--font-ui);
+      font-size: 10px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* ── EDIT MODE ── */
+    #edit-mode {
+      display: none;
+    }
+
+    .edit-field-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .edit-field-grid .field {
+      margin-bottom: 0;
+    }
+
+    .edit-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .skill-input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* ── STAT CHIPS ── */
+    .stat-row {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .stat-chip {
+      flex: 1;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px 10px;
+      text-align: center;
+    }
+
+    .stat-number {
+      font-family: var(--font-title);
+      font-size: 28px;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-family: var(--font-ui);
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
+
+    #sidebar-u-name {
+      font-family: var(--font-ui);
+      font-size: 15px;
+      font-weight: 800;
+      color: #1A1B23;
+      line-height: 1.1;
+    }
+  </style>
 </head>
+
 <body>
 
-<!-- SIDEBAR -->
-<aside class="sidebar" id="sidebar">
-  <div class="sidebar-top">
-    <div class="user-avatar"><i class="fa-solid fa-user"></i></div>
-    <div>
-      <div class="user-name" id="sidebar-name">LOADING...</div>
-      <div class="user-role">Member</div>
+  <!-- ── SIDEBAR (EXACT MATCH TO DASHBOARD) ── -->
+  <aside class="sidebar">
+    <div class="user-profile">
+      <div class="avatar" id="sidebar-avatar-circle"><i class="fa-solid fa-bolt"></i></div>
+      <div class="user-info">
+        <h2 id="sidebar-u-name">USER</h2>
+        <p id="sidebar-u-role">MEMBER</p>
+      </div>
     </div>
-  </div>
 
-  <div class="nav-section">
-    <a class="nav-item" href="dashboard.html">
-      <i class="fa-solid fa-house"></i> Dashboard
-    </a>
-    <a class="nav-item" href="dashboard.html">
-      <i class="fa-solid fa-users"></i> My Teams
-    </a>
-    <a class="nav-item" href="dashboard.html">
-      <i class="fa-solid fa-list-check"></i> My Hosted
-    </a>
-  </div>
+    <nav class="nav-list">
+      <a class="nav-item" href="dashboard.html" data-nav="all">
+        <i class="fa-solid fa-house"></i> <span>Dashboard</span>
+      </a>
+      <a class="nav-item" href="dashboard.html" data-nav="recommended">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> <span>Recommended</span>
+      </a>
+      <a class="nav-item" href="dashboard.html" data-nav="joined">
+        <i class="fa-solid fa-users"></i> <span>My Teams</span>
+      </a>
+      <a class="nav-item" href="dashboard.html" data-nav="hosted">
+        <i class="fa-solid fa-list-check"></i> <span>My Hosted</span>
+      </a>
+      <a class="nav-item" href="dashboard.html" data-nav="hackathons">
+        <i class="fa-solid fa-trophy"></i> <span>Hackathons</span>
+      </a>
+      <div class="nav-item active">
+        <i class="fa-solid fa-id-card"></i> <span>Profile</span>
+      </div>
+    </nav>
 
-  <div class="nav-divider"></div>
-
-  <div class="nav-section" style="padding-top:0">
-    <a class="nav-item active" href="profile.html">
-      <i class="fa-solid fa-circle-user"></i> Profile
-    </a>
-    <div class="nav-item">
-      <i class="fa-solid fa-gear"></i> Settings
+    <div style="margin-top:20px">
+      <div class="nav-item danger" id="logout-btn">
+        <i class="fa-solid fa-power-off"></i> <span>Log Out</span>
+      </div>
     </div>
-  </div>
 
-  <div class="nav-divider"></div>
-
-  <div class="nav-section" style="padding-top:0">
-    <div class="nav-item danger" onclick="logout()">
-      <i class="fa-solid fa-right-from-bracket"></i> Log Out
-    </div>
-  </div>
-
-  <div class="sidebar-bottom">
     <div class="sidebar-logo">DevFinder</div>
-    <div class="sidebar-since">Since 2026</div>
-  </div>
-</aside>
+  </aside>
 
-<button class="collapse-btn" id="collapse-btn" onclick="toggleSidebar()">
-  <i class="fa-solid fa-chevron-left" id="collapse-icon"></i>
-</button>
+  <!-- ── MAIN ── -->
+  <main class="main-area">
+    <header class="top-bar">
+      <button class="btn-host" id="back-btn"
+        style="background:var(--surface2); color:var(--text); border:1.5px solid var(--border-med); box-shadow:none;">
+        <i class="fa-solid fa-arrow-left"></i> DASHBOARD
+      </button>
+      <div style="flex:1"></div>
+      <button class="btn-host" id="edit-trigger-btn">
+        <i class="fa-solid fa-pen-nib"></i> EDIT PROFILE
+      </button>
+    </header>
 
-<!-- MAIN -->
-<div class="main" id="main">
-  <div class="bg-wrap">
-    <div class="bg-yellow"></div>
-    <div class="bg-pink"></div>
-    <div class="bg-green"></div>
-  </div>
+    <section class="scroll-area">
+      <h1 class="hero-title">PR<span>O</span>FILE</h1>
 
-  <!-- TOPBAR -->
-  <div class="topbar">
-    <div class="search-wrap">
-      <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" placeholder="Search Teams, Events, User">
-    </div>
-    <button class="host-btn" onclick="window.location.href='dashboard.html'">
-      <i class="fa-solid fa-arrow-left"></i> BACK
-    </button>
-    <button class="icon-btn"><i class="fa-solid fa-bell"></i></button>
-    <button class="icon-btn"><i class="fa-solid fa-gear"></i></button>
-  </div>
+      <div class="profile-grid">
 
-  <!-- PROFILE CONTENT -->
-  <div class="profile-wrap">
+        <!-- ── LEFT COLUMN ── -->
+        <div class="profile-left">
 
-    <!-- LEFT -->
-    <div class="profile-left">
-
-      <!-- Avatar Card -->
-      <div class="avatar-card">
-        <div class="avatar-wrap">
-          <div class="big-avatar" id="big-avatar">?</div>
-          <label class="avatar-upload-btn" for="avatar-input" title="Upload photo">
-            <i class="fa-solid fa-camera"></i>
-          </label>
-          <input type="file" id="avatar-input" accept="image/*">
-        </div>
-        <div>
-          <div class="profile-name" id="p-name">Loading...</div>
-          <div class="profile-email" id="p-email">loading@email.com</div>
-          <div class="profile-since" id="p-since">Member since —</div>
-        </div>
-        <button class="edit-btn" id="edit-toggle-btn" onclick="toggleEdit()">
-          <i class="fa-solid fa-pen" id="edit-btn-icon"></i>
-          <span id="edit-btn-label">EDIT PROFILE</span>
-        </button>
-      </div>
-
-      <!-- Links Card -->
-      <div class="links-card">
-        <div class="links-title">Links</div>
-        <div class="link-row">
-          <div class="link-icon"><i class="fa-brands fa-github"></i></div>
-          <div class="link-info">
-            <div class="link-label">GitHub</div>
-            <a class="link-val" id="p-github" href="#" target="_blank">Not added</a>
-          </div>
-        </div>
-        <div class="link-row">
-          <div class="link-icon"><i class="fa-brands fa-linkedin"></i></div>
-          <div class="link-info">
-            <div class="link-label">LinkedIn</div>
-            <a class="link-val" id="p-linkedin" href="#" target="_blank">Not added</a>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- RIGHT -->
-    <div class="profile-right">
-
-      <!-- Info Card -->
-      <div class="info-card">
-        <div class="card-head">
-          <div class="card-label">About</div>
-        </div>
-
-        <!-- VIEW MODE -->
-        <div class="view-mode" id="view-mode">
-          <div class="view-row">
-            <div class="vr-label">Full Name</div>
-            <div class="vr-val" id="v-name">—</div>
-          </div>
-          <div class="view-row">
-            <div class="vr-label">Bio</div>
-            <div class="vr-val" id="v-bio">—</div>
-          </div>
-          <div class="view-row">
-            <div class="vr-label">Skills</div>
-            <div class="skills-wrap" id="v-skills"></div>
-          </div>
-        </div>
-
-        <!-- EDIT MODE -->
-        <div class="edit-mode" id="edit-mode">
-          <div class="efield">
-            <label>Full Name</label>
-            <input type="text" id="e-name" placeholder="Your full name">
-          </div>
-          <div class="efield">
-            <label>Bio</label>
-            <textarea id="e-bio" placeholder="Tell the community about yourself..."></textarea>
-          </div>
-          <div class="efield">
-            <label>GitHub URL</label>
-            <input type="text" id="e-github" placeholder="https://github.com/username">
-          </div>
-          <div class="efield">
-            <label>LinkedIn URL</label>
-            <input type="text" id="e-linkedin" placeholder="https://linkedin.com/in/username">
-          </div>
-          <div class="efield">
-            <label>Skills</label>
-            <div class="skills-wrap" id="e-skills"></div>
-            <div class="skill-input-wrap">
-              <input type="text" id="skill-input" placeholder="e.g. React, Python..." onkeydown="skillKeydown(event)">
-              <button class="skill-add-btn" onclick="addSkill()">
-                <i class="fa-solid fa-plus"></i> Add
-              </button>
+          <!-- AVATAR ISLAND -->
+          <div class="avatar-island">
+            <div class="big-avatar-wrap">
+              <div class="big-avatar" id="p-avatar-big">S</div>
+              <label class="cam-btn" for="avatar-input" title="Change photo">
+                <i class="fa-solid fa-camera"></i>
+              </label>
+              <input type="file" id="avatar-input" hidden accept="image/*">
+            </div>
+            <div style="text-align:center;">
+              <div class="avatar-name" id="p-full-name">USER</div>
+              <div class="avatar-email" id="p-email">[EMAIL_ADDRESS]</div>
+            </div>
+            <div class="stat-row">
+              <div class="stat-chip">
+                <div class="stat-number" id="stat-teams">0</div>
+                <div class="stat-label">Teams</div>
+              </div>
+              <div class="stat-chip">
+                <div class="stat-number" id="stat-skills">0</div>
+                <div class="stat-label">Skills</div>
+              </div>
+              <div class="stat-chip">
+                <div class="stat-number" id="stat-year">—</div>
+                <div class="stat-label">Since</div>
+              </div>
+            </div>
+            <div class="social-row">
+              <a id="p-github-link" href="#" target="_blank" class="social-btn" title="GitHub">
+                <i class="fa-brands fa-github"></i>
+              </a>
+              <a id="p-linkedin-link" href="#" target="_blank" class="social-btn" title="LinkedIn">
+                <i class="fa-brands fa-linkedin"></i>
+              </a>
             </div>
           </div>
-          <div class="save-row">
-            <button class="save-btn" onclick="saveProfile()">
-              <i class="fa-solid fa-check"></i> SAVE CHANGES
-            </button>
-            <button class="cancel-btn" onclick="cancelEdit()">Cancel</button>
+
+          <!-- LINKS ISLAND -->
+          <div class="links-island">
+            <div class="island-title">LINKS</div>
+            <div class="link-row">
+              <div class="link-icon"><i class="fa-brands fa-github"></i></div>
+              <span class="link-text" id="v-github">Not added</span>
+            </div>
+            <div class="link-row">
+              <div class="link-icon" style="background:var(--blue-bg); color:var(--blue-dark);"><i
+                  class="fa-brands fa-linkedin"></i></div>
+              <span class="link-text" id="v-linkedin">Not added</span>
+            </div>
           </div>
-          <div id="save-error" style="color:var(--red);font-size:12px;font-weight:600;margin-top:8px;display:none"></div>
+
+        </div>
+
+        <!-- ── RIGHT COLUMN ── -->
+        <div class="profile-right">
+
+          <!-- ABOUT ISLAND -->
+          <div class="about-island">
+            <div class="about-header">
+              <div>
+                <div class="section-hero">AB<span>O</span>UT</div>
+                <p style="font-family:var(--font-ui); font-size:11px; font-weight:600; color:var(--text-3); margin-top:4px; text-transform:uppercase; letter-spacing:0.5px;"
+                  id="p-since">MEMBER SINCE 2026</p>
+              </div>
+              <!-- Edit trigger visible in view mode -->
+              <div id="edit-badge"
+                style="background:var(--green-bg); color:var(--green-dark); border:1px solid rgba(61,143,47,0.2); border-radius:99px; padding:6px 16px; font-family:var(--font-ui); font-size:11px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; white-space:nowrap; align-self:flex-start; margin-top:6px;">
+                <i class="fa-solid fa-pen"></i> EDIT
+              </div>
+            </div>
+
+            <!-- VIEW MODE -->
+            <div id="view-mode">
+              <div class="bio-text" id="v-bio">No bio added yet. Tell the world who you are!</div>
+              <div class="skills-section">
+                <div class="skills-label">Skills</div>
+                <div class="skills-wrap" id="v-skills">
+                  <span style="font-family:var(--font-ui); font-size:13px; color:var(--text-3); font-weight:500;">No
+                    skills listed yet</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- EDIT MODE -->
+            <div id="edit-mode">
+              <div class="edit-field-grid">
+                <div class="field"><label>Full Name</label><input type="text" id="e-name" placeholder="Your name"></div>
+                <div class="field"><label>GitHub URL</label><input type="text" id="e-github"
+                    placeholder="https://github.com/..."></div>
+              </div>
+              <div class="field" style="margin-top:14px;"><label>Bio</label><textarea id="e-bio"
+                  placeholder="Tell people about yourself..." style="height:100px;"></textarea></div>
+              <div class="field"><label>LinkedIn URL</label><input type="text" id="e-linkedin"
+                  placeholder="https://linkedin.com/in/..."></div>
+              <div class="field">
+                <label>Skills</label>
+                <div class="skills-wrap" id="e-skills" style="margin-bottom:10px;"></div>
+                <div class="skill-input-row">
+                  <input type="text" id="skill-input" placeholder="e.g. React, Python..."
+                    style="flex:1; padding:10px 14px; border:1.5px solid var(--border-med); border-radius:var(--radius-sm); background:var(--surface2); font-family:var(--font-ui); font-size:13px; font-weight:500; color:var(--text); outline:none;">
+                  <button class="btn-host" id="add-skill-btn" style="padding:0 18px; flex-shrink:0;">ADD</button>
+                </div>
+              </div>
+              <div class="edit-actions">
+                <button class="btn-host" id="save-profile-btn"
+                  style="flex:1; background:var(--green-dark); color:white;">
+                  <i class="fa-solid fa-check"></i> SAVE CHANGES
+                </button>
+                <button class="btn-host" id="cancel-edit-btn"
+                  style="background:var(--surface2); color:var(--text); border:1.5px solid var(--border-med); box-shadow:none; flex-shrink:0;">
+                  CANCEL
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- HOSTED TEAMS ISLAND -->
+          <div class="hosted-island">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+              <div class="section-hero">HO<span>S</span>TED</div>
+              <a href="dashboard.html" class="btn-host"
+                style="font-size:12px; background:var(--surface2); color:var(--text); border:1.5px solid var(--border-med); box-shadow:none; text-decoration:none; padding:8px 16px;">
+                <i class="fa-solid fa-plus"></i> NEW TEAM
+              </a>
+            </div>
+            <div id="hosted-list">
+              <p style="text-align:center; padding:40px; opacity:0.3; font-weight:800; font-family:var(--font-ui);">
+                LOADING...</p>
+            </div>
+          </div>
+
         </div>
       </div>
+    </section>
+  </main>
 
-      <!-- Hosted Teams Card -->
-      <div class="info-card">
-        <div class="card-head">
-          <div class="card-label">My Hosted Teams</div>
-        </div>
-        <div class="hosted-grid" id="hosted-grid">
-          <div class="empty-hosted">
-            <i class="fa-solid fa-layer-group"></i>
-            No hosted teams yet
-          </div>
-        </div>
-      </div>
-
+  <!-- ── APPLICANTS MODAL ── -->
+  <div class="modal-bg" id="modal-applicants">
+    <div class="modal-content" style="width:680px; max-height:85vh; overflow-y:auto;">
+      <h1
+        style="font-family:var(--font-title); font-size:42px; border-bottom:1px solid var(--border); margin-bottom:25px; padding-bottom:16px;"
+        id="m-team-name">APPLICANTS</h1>
+      <button class="modal-close" id="close-applicants-btn"><i class="fa-solid fa-x"></i></button>
+      <div id="applicant-list" style="display:flex; flex-direction:column; gap:14px;"></div>
     </div>
   </div>
-</div>
 
-<!-- TOAST -->
-<div class="toast" id="toast">
-  <i class="fa-solid fa-circle-check"></i>
-  <span id="toast-msg">Profile updated!</span>
-</div>
+  <div id="alerts" style="position:fixed; top:20px; right:20px; z-index:3000;"></div>
 
-<script src="profile.js"></script>
+  <script src="profile.js"></script>
 </body>
+
 </html>

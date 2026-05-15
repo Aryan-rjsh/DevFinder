@@ -1,13 +1,23 @@
 const express = require("express");
-const router  = express.Router();
-const pool    = require("../db");
-const auth    = require("../middleware/auth");
+const router = express.Router();
+const pool = require("../db");
+const auth = require("../middleware/auth");
+
+// ── PUBLIC: GET USER COUNT ─────────────────────────────
+router.get("/count", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT COUNT(*) FROM users");
+    res.json({ count: parseInt(result.rows[0].count) });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
 // ── GET CURRENT USER (ME) ─────────────────────────────
 router.get("/me", auth, async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT id, name, email, skills, bio, github_url, linkedin_url, created_at FROM users WHERE id = $1",
+      "SELECT id, name, email, skills, bio, github_url, linkedin_url, is_admin, created_at FROM users WHERE id = $1",
       [req.user.id]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: "User not found" });
@@ -34,6 +44,26 @@ router.put("/profile", auth, async (req, res) => {
     res.json(result.rows[0]);
   } catch (err) {
     console.error("Update profile error:", err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ── GET USER BY ID ──────────────────────────────────────
+// NOTE: This must stay BELOW /count, /me, and /profile
+// otherwise Express will match those paths as /:id values
+router.get("/:id", auth, async (req, res) => {
+  const { id } = req.params;
+  try {
+    if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+
+    const result = await pool.query(
+      "SELECT id, name, email, skills, bio, github_url, linkedin_url, created_at FROM users WHERE id = $1",
+      [id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: "User not found" });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Fetch user error:", err.message);
     res.status(500).json({ error: "Server error" });
   }
 });
