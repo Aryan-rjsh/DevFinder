@@ -3,6 +3,17 @@ const router = express.Router();
 const pool = require("../db");
 const auth = require("../middleware/auth");
 
+// ── PUBLIC: GET TEAM COUNT ─────────────────────────────
+// NOTE: Must be at the top before any /:id route
+router.get("/count", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT COUNT(*) FROM teams");
+    res.json({ count: parseInt(result.rows[0].count) });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 // ── GET RECOMMENDED TEAMS (INTELLIGENT MATCHING) ─────
 router.get("/recommended", auth, async (req, res) => {
   try {
@@ -38,6 +49,42 @@ router.get("/recommended", auth, async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error("Recommendation error:", err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ── GET TEAMS I AM IN (HOST OR MEMBER) ────────────────
+router.get("/my-teams", auth, async (req, res) => {
+  const userId = req.user.id;
+  try {
+    const teamsResult = await pool.query(`
+      SELECT DISTINCT t.*, u.name as creator_name
+      FROM teams t
+      JOIN users u ON t.created_by = u.id
+      LEFT JOIN applications a ON t.id = a.team_id
+      WHERE t.created_by = $1 OR (a.applicant_id = $1 AND a.status = 'accepted')
+      ORDER BY t.created_at DESC
+    `, [userId]);
+
+    const teams = teamsResult.rows;
+
+    for (let team of teams) {
+      const membersResult = await pool.query(`
+        (SELECT u.id, u.name, u.email, 'HOST' as role_in_team
+         FROM users u WHERE u.id = $1)
+        UNION
+        (SELECT u.id, u.name, u.email, a.role as role_in_team
+         FROM users u
+         JOIN applications a ON u.id = a.applicant_id
+         WHERE a.team_id = $2 AND a.status = 'accepted')
+      `, [team.created_by, team.id]);
+
+      team.members = membersResult.rows;
+    }
+
+    res.json(teams);
+  } catch (err) {
+    console.error("Fetch my teams error:", err.message);
     res.status(500).json({ error: "Server error" });
   }
 });
@@ -84,7 +131,6 @@ router.get("/", async (req, res) => {
 router.post("/", auth, async (req, res) => {
   const { name, description, tech_stack, roles, team_size, deadline, hackathon_id } = req.body;
 
-  // hosted_by is derived from the auth token (req.user.id), not from the request body
   if (!name || !roles || !roles.length) {
     return res.status(400).json({ error: "Missing required fields: name and roles are required" });
   }
@@ -96,13 +142,13 @@ router.post("/", auth, async (req, res) => {
        RETURNING *`,
       [
         name,
-        req.user.id,          // hosted_by = the logged-in user
+        req.user.id,
         description || null,
         tech_stack || [],
         roles,
         team_size || 4,
         deadline || null,
-        req.user.id,          // created_by = same
+        req.user.id,
         hackathon_id || null
       ]
     );
@@ -132,52 +178,6 @@ router.delete("/:id", auth, async (req, res) => {
     res.json({ message: "Team deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: "Delete error" });
-  }
-});
-
-// ── GET TEAMS I AM IN (HOST OR MEMBER) ────────────────
-router.get("/my-teams", auth, async (req, res) => {
-  const userId = req.user.id;
-  try {
-    const teamsResult = await pool.query(`
-      SELECT DISTINCT t.*, u.name as creator_name
-      FROM teams t
-      JOIN users u ON t.created_by = u.id
-      LEFT JOIN applications a ON t.id = a.team_id
-      WHERE t.created_by = $1 OR (a.applicant_id = $1 AND a.status = 'accepted')
-      ORDER BY t.created_at DESC
-    `, [userId]);
-
-    const teams = teamsResult.rows;
-
-    for (let team of teams) {
-      const membersResult = await pool.query(`
-        (SELECT u.id, u.name, u.email, 'HOST' as role_in_team
-         FROM users u WHERE u.id = $1)
-        UNION
-        (SELECT u.id, u.name, u.email, a.role as role_in_team
-         FROM users u
-         JOIN applications a ON u.id = a.applicant_id
-         WHERE a.team_id = $2 AND a.status = 'accepted')
-      `, [team.created_by, team.id]);
-
-      team.members = membersResult.rows;
-    }
-
-    res.json(teams);
-  } catch (err) {
-    console.error("Fetch my teams error:", err.message);
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-// ── PUBLIC: GET TEAM COUNT ─────────────────────────────
-router.get("/count", async (req, res) => {
-  try {
-    const result = await pool.query("SELECT COUNT(*) FROM teams");
-    res.json({ count: parseInt(result.rows[0].count) });
-  } catch (err) {
-    res.status(500).json({ error: "Server error" });
   }
 });
 
