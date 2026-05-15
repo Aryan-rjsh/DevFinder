@@ -1,209 +1,665 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DevFinder — My Profile</title>
-<link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-<style>
-  /* Profile Specific Layout Tweaks */
-  .profile-grid {
-    display: grid;
-    grid-template-columns: 350px 1fr;
-    gap: 25px;
-    height: 100%;
-  }
-  .profile-left { display: flex; flex-direction: column; gap: 25px; }
-  .profile-right { display: flex; flex-direction: column; gap: 25px; overflow-y: auto; padding-right: 10px; }
-  
-  .avatar-island {
-    background: var(--white); border: var(--border); border-radius: var(--radius);
-    padding: 40px 20px; text-align: center; box-shadow: var(--shadow);
-    display: flex; flex-direction: column; align-items: center; gap: 20px;
-  }
-  .big-avatar-wrap { position: relative; width: 140px; height: 140px; }
-  .big-avatar { 
-    width: 100%; height: 100%; border-radius: 50%; border: var(--border); 
-    background: var(--yellow); display: flex; align-items: center; justify-content: center;
-    font-family: var(--font-title); font-size: 60px; box-shadow: var(--shadow-sm); overflow: hidden;
-  }
-  .big-avatar img { width: 100%; height: 100%; object-fit: cover; }
-  .cam-btn {
-    position: absolute; bottom: 5px; right: 5px; width: 45px; height: 45px;
-    background: var(--pink); border: var(--border); border-radius: 50%;
-    display: flex; align-items: center; justify-content: center; color: white; cursor: pointer;
-    box-shadow: 3px 3px 0px black;
-  }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevFinder — My Profile</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jacquarda+Bastarda+9:wght@400&display=swap" />
+  <style>
+    /* ── PROFILE-SPECIFIC LAYOUT ── */
+    .profile-grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 20px;
+      height: 100%;
+      align-items: start;
+    }
 
-  .info-island {
-    background: var(--white); border: var(--border); border-radius: var(--radius);
-    padding: 35px; box-shadow: var(--shadow);
-  }
-  
-  .hosted-team-row {
-    background: var(--black); color: var(--white); border: 3px solid var(--white);
-    border-radius: 20px; padding: 20px 25px; display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 15px; box-shadow: 6px 6px 0px rgba(0,0,0,0.3);
-  }
-  .hosted-team-row h4 { font-family: var(--font-title); font-size: 26px; color: var(--yellow); }
+    .profile-left {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+    }
 
-  .skill-tag {
-    background: var(--cyan); border: 2.5px solid var(--black); border-radius: 12px;
-    padding: 6px 15px; font-weight: 800; font-size: 12px; display: inline-flex; align-items: center; gap: 8px;
-  }
-  .skill-tag button { background: none; border: none; cursor: pointer; font-size: 10px; font-weight: 900; }
+    .profile-right {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
 
-  /* Edit Mode Overlay */
-  .edit-overlay { display: none; margin-top: 20px; border-top: 2px dashed #ddd; padding-top: 20px; width: 100%; }
-  .edit-overlay.active { display: block; }
-</style>
+    /* ── AVATAR ISLAND ── */
+    .avatar-island {
+      background: var(--white);
+      border: 1.5px solid var(--border-med);
+      border-radius: var(--radius-xl);
+      padding: 32px 24px;
+      text-align: center;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .big-avatar-wrap {
+      position: relative;
+      width: 120px;
+      height: 120px;
+    }
+
+    .big-avatar {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 3px solid var(--border-med);
+      background: linear-gradient(135deg, var(--green) 0%, var(--purple) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-title);
+      font-size: 52px;
+      color: var(--text);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+
+    .big-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .cam-btn {
+      position: absolute;
+      bottom: 4px;
+      right: 4px;
+      width: 38px;
+      height: 38px;
+      background: var(--text);
+      border: 2px solid white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.18s ease;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .cam-btn:hover {
+      background: var(--green-dark);
+      transform: scale(1.08);
+    }
+
+    .avatar-name {
+      font-family: var(--font-title);
+      font-size: 36px;
+      line-height: 1;
+      color: var(--text);
+      letter-spacing: 1px;
+    }
+
+    .avatar-email {
+      font-family: var(--font-ui);
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--text-3);
+      margin-top: -10px;
+    }
+
+    .avatar-since {
+      font-family: var(--font-ui);
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-3);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .social-row {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .social-btn {
+      flex: 1;
+      height: 40px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--border-med);
+      background: var(--surface2);
+      color: var(--text-2);
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      transition: all 0.18s ease;
+      cursor: pointer;
+    }
+
+    .social-btn:hover {
+      background: var(--text);
+      color: white;
+      border-color: var(--text);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ── LINKS ISLAND ── */
+    .links-island {
+      background: var(--white);
+      border: 1.5px solid var(--border-med);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .island-title {
+      font-family: var(--font-title);
+      font-size: 22px;
+      color: var(--text);
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      letter-spacing: 0.5px;
+    }
+
+    .link-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .link-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .link-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: var(--surface2);
+      border: 1.5px solid var(--border-med);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: var(--text-2);
+      flex-shrink: 0;
+    }
+
+    .link-text {
+      font-family: var(--font-ui);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-2);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+
+    .link-text.filled {
+      color: var(--text);
+    }
+
+    /* ── ABOUT ISLAND ── */
+    .about-island {
+      background: var(--white);
+      border: 1.5px solid var(--border-med);
+      border-radius: var(--radius-xl);
+      padding: 28px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .about-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+      gap: 12px;
+    }
+
+    .section-hero {
+      font-family: var(--font-title);
+      font-size: 52px;
+      line-height: 0.9;
+      color: var(--text);
+      letter-spacing: 1px;
+    }
+
+    .section-hero span {
+      color: transparent;
+      -webkit-text-stroke: 2px var(--green-dark);
+    }
+
+    .bio-text {
+      font-family: var(--font-ui);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-2);
+      line-height: 1.7;
+      background: var(--surface2);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      border: 1px solid var(--border);
+    }
+
+    .skills-section {
+      margin-top: 20px;
+    }
+
+    .skills-label {
+      font-family: var(--font-ui);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .skills-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .skill-chip {
+      background: var(--green-bg);
+      color: var(--green-dark);
+      border: 1px solid rgba(61, 143, 47, 0.2);
+      border-radius: 99px;
+      padding: 6px 14px;
+      font-family: var(--font-ui);
+      font-size: 12px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.15s ease;
+    }
+
+    .skill-chip:nth-child(3n+2) {
+      background: var(--purple-bg);
+      color: var(--purple-dark);
+      border-color: rgba(91, 33, 182, 0.2);
+    }
+
+    .skill-chip:nth-child(3n+3) {
+      background: var(--blue-bg);
+      color: var(--blue-dark);
+      border-color: rgba(12, 74, 110, 0.2);
+    }
+
+    .skill-chip button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 900;
+      color: inherit;
+      opacity: 0.6;
+      padding: 0;
+      display: flex;
+      align-items: center;
+    }
+
+    .skill-chip button:hover {
+      opacity: 1;
+    }
+
+    /* ── HOSTED TEAMS ISLAND ── */
+    .hosted-island {
+      background: var(--white);
+      border: 1.5px solid var(--border-med);
+      border-radius: var(--radius-xl);
+      padding: 28px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .hosted-team-card {
+      background: var(--text);
+      border-radius: var(--radius-lg);
+      padding: 20px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      transition: all 0.2s ease;
+      gap: 16px;
+    }
+
+    .hosted-team-card:last-child {
+      margin-bottom: 0;
+    }
+
+    .hosted-team-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .hosted-team-name {
+      font-family: var(--font-title);
+      font-size: 24px;
+      color: var(--yellow);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .hosted-team-meta {
+      font-family: var(--font-ui);
+      font-size: 10px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.4);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .hosted-team-roles {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 8px;
+    }
+
+    .hosted-role-chip {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 99px;
+      padding: 3px 10px;
+      font-family: var(--font-ui);
+      font-size: 10px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* ── EDIT MODE ── */
+    #edit-mode {
+      display: none;
+    }
+
+    .edit-field-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .edit-field-grid .field {
+      margin-bottom: 0;
+    }
+
+    .edit-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .skill-input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* ── STAT CHIPS ── */
+    .stat-row {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .stat-chip {
+      flex: 1;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px 10px;
+      text-align: center;
+    }
+
+    .stat-number {
+      font-family: var(--font-title);
+      font-size: 28px;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-family: var(--font-ui);
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
+  </style>
 </head>
+
 <body>
 
-<!-- SIDEBAR ISLAND (SYNCED) -->
-<aside class="sidebar">
-  <div class="user-profile">
-    <div class="avatar" id="sidebar-avatar-circle"><i class="fa-solid fa-bolt"></i></div>
-    <div class="user-info">
-      <h2 id="sidebar-u-name">SREERAG</h2>
-      <p id="sidebar-u-role">MEMBER</p>
-    </div>
-  </div>
-
-  <nav class="nav-list">
-    <a class="nav-item" href="dashboard.html">
-      <i class="fa-solid fa-house"></i> <span>Dashboard</span>
-    </a>
-    <a class="nav-item" href="dashboard.html">
-      <i class="fa-solid fa-wand-magic-sparkles"></i> <span>Recommended</span>
-    </a>
-    <a class="nav-item" href="dashboard.html">
-      <i class="fa-solid fa-users"></i> <span>My Teams</span>
-    </a>
-    <a class="nav-item" href="dashboard.html">
-      <i class="fa-solid fa-list-check"></i> <span>My Hosted</span>
-    </a>
-    <div class="nav-item active">
-      <i class="fa-solid fa-circle-user"></i> <span>Profile</span>
-    </div>
-  </nav>
-
-  <div style="margin-top:auto">
-    <div class="nav-item danger" onclick="logout()">
-      <i class="fa-solid fa-power-off"></i> <span>Log Out</span>
-    </div>
-    <div class="sidebar-logo">DevFinder</div>
-  </div>
-</aside>
-
-<!-- MAIN AREA ISLAND -->
-<main class="main-area">
-  <header class="top-bar">
-    <button class="btn-host" onclick="window.location.href='dashboard.html'" style="background:var(--white); color:black; border:var(--border); box-shadow:var(--shadow-sm)">
-      <i class="fa-solid fa-arrow-left"></i> DASHBOARD
-    </button>
-    <div style="flex:1"></div>
-    <button class="btn-host" id="edit-trigger-btn">
-      <i class="fa-solid fa-pen-nib"></i> EDIT PROFILE
-    </button>
-  </header>
-
-  <section class="scroll-area">
-    <div class="profile-grid">
-      
-      <!-- LEFT COLUMN -->
-      <div class="profile-left">
-        <div class="avatar-island">
-          <div class="big-avatar-wrap">
-            <div class="big-avatar" id="p-avatar-big">S</div>
-            <label class="cam-btn" for="avatar-input">
-              <i class="fa-solid fa-camera"></i>
-            </label>
-            <input type="file" id="avatar-input" hidden accept="image/*">
-          </div>
-          <div>
-            <h1 style="font-family:var(--font-title); font-size:42px; line-height:1;" id="p-full-name">SREERAG</h1>
-            <p style="font-weight:800; opacity:0.5; font-size:12px; margin-top:5px;" id="p-email">sreerag@devfinder.com</p>
-          </div>
-          <div style="display:flex; gap:15px; width:100%;">
-            <a id="p-github-link" href="#" target="_blank" class="btn-icon" style="flex:1; border-radius:15px;"><i class="fa-brands fa-github"></i></a>
-            <a id="p-linkedin-link" href="#" target="_blank" class="btn-icon" style="flex:1; border-radius:15px;"><i class="fa-brands fa-linkedin"></i></a>
-          </div>
-        </div>
-
-        <div class="info-island">
-          <h3 style="font-family:var(--font-title); font-size:28px; margin-bottom:15px; border-bottom:3px solid black;">LINKS</h3>
-          <div class="field"><label>GitHub</label><p id="v-github" style="font-weight:700; opacity:0.6;">Not added</p></div>
-          <div class="field"><label>LinkedIn</label><p id="v-linkedin" style="font-weight:700; opacity:0.6;">Not added</p></div>
-        </div>
+  <!-- ── SIDEBAR (EXACT MATCH TO DASHBOARD) ── -->
+  <aside class="sidebar">
+    <div class="user-profile">
+      <div class="avatar" id="sidebar-avatar-circle"><i class="fa-solid fa-bolt"></i></div>
+      <div class="user-info">
+        <h2 id="sidebar-u-name">SREERAG</h2>
+        <p id="sidebar-u-role">MEMBER</p>
       </div>
+    </div>
 
-      <!-- RIGHT COLUMN -->
-      <div class="profile-right">
-        
-        <!-- ABOUT ISLAND -->
-        <div class="info-island">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-            <h2 style="font-family:var(--font-title); font-size:44px;">ABOUT ME</h2>
-            <div id="p-since" style="font-size:10px; font-weight:900; opacity:0.4;">MEMBER SINCE 2026</div>
-          </div>
-          
-          <div id="view-mode">
-            <div class="field"><label>Bio</label><p id="v-bio" style="font-weight:700; line-height:1.6;">No bio added yet. Tell the world who you are!</p></div>
-            <div class="field">
-              <label>Skills</label>
-              <div id="v-skills" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;"></div>
+    <nav class="nav-list">
+      <a class="nav-item" href="dashboard.html" data-nav="all">
+        <i class="fa-solid fa-house"></i> <span>Dashboard</span>
+      </a>
+      <a class="nav-item" href="dashboard.html" data-nav="recommended">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> <span>Recommended</span>
+      </a>
+      <a class="nav-item" href="dashboard.html" data-nav="joined">
+        <i class="fa-solid fa-users"></i> <span>My Teams</span>
+      </a>
+      <a class="nav-item" href="dashboard.html" data-nav="hosted">
+        <i class="fa-solid fa-list-check"></i> <span>My Hosted</span>
+      </a>
+      <a class="nav-item" href="dashboard.html" data-nav="hackathons">
+        <i class="fa-solid fa-trophy"></i> <span>Hackathons</span>
+      </a>
+      <div class="nav-item active">
+        <i class="fa-solid fa-id-card"></i> <span>Profile</span>
+      </div>
+    </nav>
+
+    <div style="margin-top:20px">
+      <div class="nav-item danger" id="logout-btn">
+        <i class="fa-solid fa-power-off"></i> <span>Log Out</span>
+      </div>
+    </div>
+
+    <div class="sidebar-logo">DevFinder</div>
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <main class="main-area">
+    <header class="top-bar">
+      <button class="btn-host" id="back-btn"
+        style="background:var(--surface2); color:var(--text); border:1.5px solid var(--border-med); box-shadow:none;">
+        <i class="fa-solid fa-arrow-left"></i> DASHBOARD
+      </button>
+      <div style="flex:1"></div>
+      <button class="btn-host" id="edit-trigger-btn">
+        <i class="fa-solid fa-pen-nib"></i> EDIT PROFILE
+      </button>
+    </header>
+
+    <section class="scroll-area">
+      <h1 class="hero-title">PR<span>O</span>FILE</h1>
+
+      <div class="profile-grid">
+
+        <!-- ── LEFT COLUMN ── -->
+        <div class="profile-left">
+
+          <!-- AVATAR ISLAND -->
+          <div class="avatar-island">
+            <div class="big-avatar-wrap">
+              <div class="big-avatar" id="p-avatar-big">S</div>
+              <label class="cam-btn" for="avatar-input" title="Change photo">
+                <i class="fa-solid fa-camera"></i>
+              </label>
+              <input type="file" id="avatar-input" hidden accept="image/*">
             </div>
-          </div>
-
-          <!-- EDIT MODE (HIDDEN) -->
-          <div id="edit-mode" style="display:none;">
-            <div class="field"><label>Full Name</label><input type="text" id="e-name"></div>
-            <div class="field"><label>Bio</label><textarea id="e-bio" style="height:100px;"></textarea></div>
-            <div class="field"><label>GitHub URL</label><input type="text" id="e-github"></div>
-            <div class="field"><label>LinkedIn URL</label><input type="text" id="e-linkedin"></div>
-            <div class="field">
-              <label>Skills</label>
-              <div id="e-skills" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;"></div>
-              <div style="display:flex; gap:10px;">
-                <input type="text" id="skill-input" placeholder="Add skill..." style="flex:1">
-                <button class="btn-host" id="add-skill-btn" style="padding:0 20px;">ADD</button>
+            <div style="text-align:center;">
+              <div class="avatar-name" id="p-full-name">SREERAG</div>
+              <div class="avatar-email" id="p-email">sreerag@devfinder.com</div>
+            </div>
+            <div class="stat-row">
+              <div class="stat-chip">
+                <div class="stat-number" id="stat-teams">0</div>
+                <div class="stat-label">Teams</div>
+              </div>
+              <div class="stat-chip">
+                <div class="stat-number" id="stat-skills">0</div>
+                <div class="stat-label">Skills</div>
+              </div>
+              <div class="stat-chip">
+                <div class="stat-number" id="stat-year">—</div>
+                <div class="stat-label">Since</div>
               </div>
             </div>
-            <div style="display:flex; gap:15px; margin-top:30px;">
-              <button class="btn-host" style="flex:1; background:var(--green); color:black;" id="save-profile-btn">SAVE CHANGES</button>
-              <button class="btn-host" style="flex:0.5; background:var(--white); color:black; border:var(--border);" id="cancel-edit-btn">CANCEL</button>
+            <div class="social-row">
+              <a id="p-github-link" href="#" target="_blank" class="social-btn" title="GitHub">
+                <i class="fa-brands fa-github"></i>
+              </a>
+              <a id="p-linkedin-link" href="#" target="_blank" class="social-btn" title="LinkedIn">
+                <i class="fa-brands fa-linkedin"></i>
+              </a>
             </div>
           </div>
-        </div>
 
-        <!-- HOSTED TEAMS ISLAND -->
-        <div class="info-island">
-          <h2 style="font-family:var(--font-title); font-size:44px; margin-bottom:20px;">MY HOSTED TEAMS</h2>
-          <div id="hosted-list">
-            <!-- Teams will render here -->
+          <!-- LINKS ISLAND -->
+          <div class="links-island">
+            <div class="island-title">LINKS</div>
+            <div class="link-row">
+              <div class="link-icon"><i class="fa-brands fa-github"></i></div>
+              <span class="link-text" id="v-github">Not added</span>
+            </div>
+            <div class="link-row">
+              <div class="link-icon" style="background:var(--blue-bg); color:var(--blue-dark);"><i
+                  class="fa-brands fa-linkedin"></i></div>
+              <span class="link-text" id="v-linkedin">Not added</span>
+            </div>
           </div>
+
         </div>
 
+        <!-- ── RIGHT COLUMN ── -->
+        <div class="profile-right">
+
+          <!-- ABOUT ISLAND -->
+          <div class="about-island">
+            <div class="about-header">
+              <div>
+                <div class="section-hero">AB<span>O</span>UT</div>
+                <p style="font-family:var(--font-ui); font-size:11px; font-weight:600; color:var(--text-3); margin-top:4px; text-transform:uppercase; letter-spacing:0.5px;"
+                  id="p-since">MEMBER SINCE 2026</p>
+              </div>
+              <!-- Edit trigger visible in view mode -->
+              <div id="edit-badge"
+                style="background:var(--green-bg); color:var(--green-dark); border:1px solid rgba(61,143,47,0.2); border-radius:99px; padding:6px 16px; font-family:var(--font-ui); font-size:11px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; white-space:nowrap; align-self:flex-start; margin-top:6px;">
+                <i class="fa-solid fa-pen"></i> EDIT
+              </div>
+            </div>
+
+            <!-- VIEW MODE -->
+            <div id="view-mode">
+              <div class="bio-text" id="v-bio">No bio added yet. Tell the world who you are!</div>
+              <div class="skills-section">
+                <div class="skills-label">Skills</div>
+                <div class="skills-wrap" id="v-skills">
+                  <span style="font-family:var(--font-ui); font-size:13px; color:var(--text-3); font-weight:500;">No
+                    skills listed yet</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- EDIT MODE -->
+            <div id="edit-mode">
+              <div class="edit-field-grid">
+                <div class="field"><label>Full Name</label><input type="text" id="e-name" placeholder="Your name"></div>
+                <div class="field"><label>GitHub URL</label><input type="text" id="e-github"
+                    placeholder="https://github.com/..."></div>
+              </div>
+              <div class="field" style="margin-top:14px;"><label>Bio</label><textarea id="e-bio"
+                  placeholder="Tell people about yourself..." style="height:100px;"></textarea></div>
+              <div class="field"><label>LinkedIn URL</label><input type="text" id="e-linkedin"
+                  placeholder="https://linkedin.com/in/..."></div>
+              <div class="field">
+                <label>Skills</label>
+                <div class="skills-wrap" id="e-skills" style="margin-bottom:10px;"></div>
+                <div class="skill-input-row">
+                  <input type="text" id="skill-input" placeholder="e.g. React, Python..."
+                    style="flex:1; padding:10px 14px; border:1.5px solid var(--border-med); border-radius:var(--radius-sm); background:var(--surface2); font-family:var(--font-ui); font-size:13px; font-weight:500; color:var(--text); outline:none;">
+                  <button class="btn-host" id="add-skill-btn" style="padding:0 18px; flex-shrink:0;">ADD</button>
+                </div>
+              </div>
+              <div class="edit-actions">
+                <button class="btn-host" id="save-profile-btn"
+                  style="flex:1; background:var(--green-dark); color:white;">
+                  <i class="fa-solid fa-check"></i> SAVE CHANGES
+                </button>
+                <button class="btn-host" id="cancel-edit-btn"
+                  style="background:var(--surface2); color:var(--text); border:1.5px solid var(--border-med); box-shadow:none; flex-shrink:0;">
+                  CANCEL
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- HOSTED TEAMS ISLAND -->
+          <div class="hosted-island">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+              <div class="section-hero">HO<span>S</span>TED</div>
+              <a href="dashboard.html" class="btn-host"
+                style="font-size:12px; background:var(--surface2); color:var(--text); border:1.5px solid var(--border-med); box-shadow:none; text-decoration:none; padding:8px 16px;">
+                <i class="fa-solid fa-plus"></i> NEW TEAM
+              </a>
+            </div>
+            <div id="hosted-list">
+              <p style="text-align:center; padding:40px; opacity:0.3; font-weight:800; font-family:var(--font-ui);">
+                LOADING...</p>
+            </div>
+          </div>
+
+        </div>
       </div>
+    </section>
+  </main>
 
+  <!-- ── APPLICANTS MODAL ── -->
+  <div class="modal-bg" id="modal-applicants">
+    <div class="modal-content" style="width:680px; max-height:85vh; overflow-y:auto;">
+      <h1
+        style="font-family:var(--font-title); font-size:42px; border-bottom:1px solid var(--border); margin-bottom:25px; padding-bottom:16px;"
+        id="m-team-name">APPLICANTS</h1>
+      <button class="modal-close" id="close-applicants-btn"><i class="fa-solid fa-x"></i></button>
+      <div id="applicant-list" style="display:flex; flex-direction:column; gap:14px;"></div>
     </div>
-  </section>
-</main>
-
-<!-- APPLICANTS MODAL -->
-<div class="modal-bg" id="modal-applicants">
-  <div class="modal-content" style="width:700px; max-height:85vh; overflow-y:auto;">
-    <h1 style="font-family:var(--font-title); font-size:48px; border-bottom:var(--border); margin-bottom:25px;" id="m-team-name">APPLICANTS</h1>
-    <button class="modal-close" onclick="document.getElementById('modal-applicants').classList.remove('active')"><i class="fa-solid fa-x"></i></button>
-    <div id="applicant-list" style="display:flex; flex-direction:column; gap:15px;"></div>
   </div>
-</div>
 
-<div id="alerts" style="position:fixed; top:20px; right:20px; z-index:3000;"></div>
+  <div id="alerts" style="position:fixed; top:20px; right:20px; z-index:3000;"></div>
 
-<script src="profile.js"></script>
+  <script src="profile.js"></script>
 </body>
+
 </html>
