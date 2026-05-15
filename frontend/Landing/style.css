@@ -683,3 +683,10 @@ body {
 .form-feedback.err {
     color: #b91c1c;
 }
+
+a.contact-card {
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    /* override browser default block on <a> */
+}

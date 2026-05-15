@@ -51,14 +51,72 @@ function resetAnimations(overlayId) {
     }
 }
 
+// ── FETCH REAL STATS FROM BACKEND ─────────
+
+const API_BASE = 'http://localhost:5000'; // Change to your deployed backend URL if needed
+
+async function fetchStats() {
+    try {
+        const res = await fetch(`${API_BASE}/api/admin/stats`, {
+            headers: {
+                // Admin stats endpoint requires auth — use a public stats endpoint if available,
+                // otherwise fall back to individual public counts below.
+            }
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            return {
+                users: parseInt(data.users) || null,
+                teams: parseInt(data.teams) || null,
+            };
+        }
+    } catch (_) { }
+
+    // Fallback: hit public-accessible endpoints for counts
+    try {
+        const [usersRes, teamsRes] = await Promise.all([
+            fetch(`${API_BASE}/api/users/count`),
+            fetch(`${API_BASE}/api/teams/count`),
+        ]);
+
+        const users = usersRes.ok ? (await usersRes.json()).count : null;
+        const teams = teamsRes.ok ? (await teamsRes.json()).count : null;
+        return { users, teams };
+    } catch (_) { }
+
+    return { users: null, teams: null };
+}
+
 // ── ABOUT ─────────────────────────────────
 
-function animateAbout() {
+async function animateAbout() {
+    // Fetch live stats first (non-blocking — show animation regardless)
+    const statsPromise = fetchStats();
+
     document.querySelectorAll('#aboutModal .stat-card').forEach((card) => {
         const delay = parseInt(card.dataset.delay) || 0;
-        setTimeout(() => {
+        setTimeout(async () => {
             card.classList.add('visible');
-            animateCounter(card.querySelector('.stat-num'));
+
+            const numEl = card.querySelector('.stat-num');
+            const originalTarget = parseInt(numEl.dataset.target);
+            const statKey = card.dataset.stat; // 'users', 'teams', or undefined
+
+            let target = originalTarget;
+
+            if (statKey === 'users' || statKey === 'teams') {
+                try {
+                    const stats = await statsPromise;
+                    if (stats[statKey] !== null && !isNaN(stats[statKey])) {
+                        target = stats[statKey];
+                        // Update the data-target so reset works correctly
+                        numEl.dataset.target = target;
+                    }
+                } catch (_) { }
+            }
+
+            animateCounter(numEl, target);
         }, 200 + delay);
     });
 
@@ -75,8 +133,10 @@ function animateAbout() {
 
 // ── COUNTER ───────────────────────────────
 
-function animateCounter(el) {
-    const target = parseInt(el.dataset.target);
+function animateCounter(el, target) {
+    if (target === undefined || target === null) {
+        target = parseInt(el.dataset.target);
+    }
     const duration = 1300;
     const start = performance.now();
 
@@ -126,9 +186,14 @@ document.getElementById('sendBtn').addEventListener('click', () => {
     btn.textContent = 'Sending...';
     btn.disabled = true;
 
+    // Open user's mail client with prefilled content
+    const subject = encodeURIComponent(`DevFinder Contact: Message from ${name}`);
+    const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`);
+    window.location.href = `mailto:hello@devfinder.io?subject=${subject}&body=${body}`;
+
     setTimeout(() => {
         feedback.classList.add('ok');
-        feedback.textContent = '// Message sent. We will be in touch.';
+        feedback.textContent = '// Mail client opened. We will be in touch.';
         btn.textContent = 'Sent';
 
         document.getElementById('contactName').value = '';
@@ -141,5 +206,5 @@ document.getElementById('sendBtn').addEventListener('click', () => {
             feedback.textContent = '';
             feedback.className = 'form-feedback';
         }, 4000);
-    }, 1200);
+    }, 600);
 });

@@ -53,13 +53,14 @@
                 </div>
 
                 <div class="stat-row">
-                    <div class="stat-card" data-delay="0">
-                        <div class="stat-num" data-target="12000">0</div>
+                    <!-- data-stat tells JS which live value to fetch -->
+                    <div class="stat-card" data-delay="0" data-stat="users">
+                        <div class="stat-num" data-target="0">0</div>
                         <div class="stat-label">Devs Connected</div>
                     </div>
-                    <div class="stat-card" data-delay="160">
-                        <div class="stat-num" data-target="340">0</div>
-                        <div class="stat-label">Colleges</div>
+                    <div class="stat-card" data-delay="160" data-stat="teams">
+                        <div class="stat-num" data-target="0">0</div>
+                        <div class="stat-label">Teams</div>
                     </div>
                     <div class="stat-card" data-delay="320">
                         <div class="stat-num" data-target="98">0</div>
@@ -177,7 +178,8 @@
 
                 <div class="contact-grid">
 
-                    <div class="contact-card" data-delay="0">
+                    <!-- EMAIL — opens mail client -->
+                    <a class="contact-card" data-delay="0" href="mailto:hello@devfinder.io">
                         <div class="contact-icon-wrap">
                             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
@@ -190,9 +192,11 @@
                             <div class="contact-value">hello@devfinder.io</div>
                         </div>
                         <span class="contact-arrow">&#x2192;</span>
-                    </div>
+                    </a>
 
-                    <div class="contact-card" data-delay="70">
+                    <!-- GITHUB — opens github in new tab -->
+                    <a class="contact-card" data-delay="70" href="https://github.com/devfinder" target="_blank"
+                        rel="noopener noreferrer">
                         <div class="contact-icon-wrap">
                             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
@@ -205,8 +209,9 @@
                             <div class="contact-value">github.com/devfinder</div>
                         </div>
                         <span class="contact-arrow">&#x2192;</span>
-                    </div>
+                    </a>
 
+                    <!-- DISCORD — static -->
                     <div class="contact-card" data-delay="140">
                         <div class="contact-icon-wrap">
                             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -221,6 +226,7 @@
                         <span class="contact-arrow">&#x2192;</span>
                     </div>
 
+                    <!-- TWITTER — static -->
                     <div class="contact-card" data-delay="210">
                         <div class="contact-icon-wrap">
                             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -236,6 +242,7 @@
                         <span class="contact-arrow">&#x2192;</span>
                     </div>
 
+                    <!-- LOCATION — changed to Kollam, India -->
                     <div class="contact-card" data-delay="280">
                         <div class="contact-icon-wrap">
                             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -246,12 +253,13 @@
                         </div>
                         <div class="contact-info">
                             <div class="contact-label">Based In</div>
-                            <div class="contact-value">Bangalore, India</div>
+                            <div class="contact-value">Kollam, India</div>
                         </div>
                         <span class="contact-arrow">&#x2192;</span>
                     </div>
 
-                    <div class="contact-card" data-delay="350">
+                    <!-- SUPPORT — opens mail client with support address -->
+                    <a class="contact-card" data-delay="350" href="mailto:support@devfinder.io">
                         <div class="contact-icon-wrap">
                             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
@@ -265,7 +273,7 @@
                             <div class="contact-value">support@devfinder.io</div>
                         </div>
                         <span class="contact-arrow">&#x2192;</span>
-                    </div>
+                    </a>
 
                 </div>
 
